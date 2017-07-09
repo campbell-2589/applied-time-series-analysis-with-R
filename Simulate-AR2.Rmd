@@ -1,0 +1,51 @@
+---
+title: "TimeSeriesAnalysis-Chapter1"
+author: "Bruce Campbell"
+date: "July 2, 2017"
+output: pdf_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(dev = 'pdf')
+knitr::opts_chunk$set(cache=TRUE)
+knitr::opts_chunk$set(tidy=TRUE)
+knitr::opts_chunk$set(prompt=FALSE)
+knitr::opts_chunk$set(fig.height=5)
+knitr::opts_chunk$set(fig.width=7)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(message=TRUE)
+```
+
+`r date()`
+
+## Startup investigation for Autoregressive model
+
+We will try to plot mutliple time series using ts.plot.  First we simulate $n$ autoregressive $AR(2)$ time series.
+
+$$ x_t = \phi_1 x_{t-1}  \ldots  \phi_p x_{t-p} + \omega_t$$ 
+
+```{r}
+nseries <- 10
+samples_per_series <-550
+phi1 <- 1.0
+phi2 <- -0.9
+
+simulated <- matrix(0, nrow = samples_per_series,ncol = nseries)
+
+for( i in 1:nseries)
+{
+  w <- rnorm(550,0,1)
+  x <- filter(w,filter = c(phi1,phi2),method = "recursive")
+  simulated[,i]= x
+  plot.ts(x)
+}
+ts.plot(simulated,gpars= list(col=rainbow(10)))
+abline(v=50,col='red', lwd=3)
+title(c("AR(2)","10 Similated series - hline at t=50"))
+
+```
+
+
+
+
+
