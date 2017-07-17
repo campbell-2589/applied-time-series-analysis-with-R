@@ -1,5 +1,5 @@
 ---
-title: "TimeSeriesAnalysisAnApplications"
+title: "Time Series Analysis And Applications"
 author: "Bruce Campbell"
 date: "July 17, 2017"
 output: pdf_document
@@ -22,8 +22,9 @@ knitr::opts_chunk$set(message=TRUE)
 
 
 ```{r}
-install.packages("devtools")     # only need to do this once
+#install.packages("devtools")     # only need to do this once
 devtools::install_github("nickpoison/astsa")
+library(astsa)
 
 ```
 
