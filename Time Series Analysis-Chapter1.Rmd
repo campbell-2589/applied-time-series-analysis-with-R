@@ -1,0 +1,105 @@
+---
+title: "Time Series Analysis And Applications"
+author: "Bruce Campbell"
+date: "July 17, 2017"
+output: pdf_document
+---
+
+---
+```{r setup, include=FALSE}
+rm(list = ls())
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(dev = 'pdf')
+knitr::opts_chunk$set(cache=TRUE)
+knitr::opts_chunk$set(tidy=TRUE)
+knitr::opts_chunk$set(prompt=FALSE)
+knitr::opts_chunk$set(fig.height=5)
+knitr::opts_chunk$set(fig.width=7)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(message=TRUE)
+knitr::opts_knit$set(root.dir = "C:/E/AppliedTimeSeriesAnalysisWithR")
+
+```
+
+`r date()`
+
+
+```{r}
+#install.packages("devtools")     # only need to do this once
+#devtools::install_github("nickpoison/astsa")
+library(astsa)
+
+```
+
+###1.1 Compare Earthquake and Explsion
+
+To compare the earthquake and explosion signals, plot the data displayed in Figure 1.7 on the same graph using different colors or different line types and comment on the results.
+
+```{r}
+plot(EQ5, col='blue',main="Earthquake vs Explosion") 
+lines(EXP6,col='red')
+legend("topleft", title.col = "black",
+  c("earthquake","explosion" ),
+  text.col =c("blue","red"),
+  text.font = 1, cex = 1)
+
+```
+
+
+
+###1.2 Plot and Compare signal plus noise model with dampening oscillations.
+Consider a signal-plus-noise model of the general form $x_t = s_t + w_t$, where $w_t$ is Gaussian white noise with $\sigma^2_w = 1$. Simulate and plot $n = 200$ observations from each of the following two models
+(a) $x_t = s_t + w_t$, for $t = 1,..., 200$ where 
+
+$$s_t = 0, t = 1,..., 100$$ 
+$$10 exp^{  \frac{(t 100)}{20} }  cos(\frac{2\pi t}{4}), t = 101,..., 200$$ 
+```{r}
+s = c(rep(0,100), 10*exp(-(1:100)/20)*cos(2*pi*1:100/4))
+x = ts(s + rnorm(200, 0, 1)) 
+plot(x) 
+
+envelopeU = c(rep(0,100), 10*exp(-(1:100)/20))
+envelopeL = -1* c(rep(0,100), 10*exp(-(1:100)/20))
+lines(envelopeU,col='red')
+lines(envelopeL,col='red')
+
+```
+
+(b) $x_t = s_t + w_t$, for $t = 1,..., 200$ where 
+
+$$s_t =0 \;\; t=1, ... ,100$$
+$$s_t = 10 exp^{ \frac{(t 100)} {200} } cos(\frac{2 \pi t}{4}), t = 101,..., 200$$
+```{r}
+s = c(rep(0,100), 10*exp(-(1:100)/200)*cos(2*pi*1:100/4))
+x = ts(s + rnorm(200, 0, 1)) 
+plot(x) 
+
+envelopeU = c(rep(0,100), 10*exp(-(1:100)/200))
+envelopeL = -1* c(rep(0,100), 10*exp(-(1:100)/200))
+lines(envelopeU,col='red')
+lines(envelopeL,col='red')
+
+```
+
+(c) Compare the general appearance of the series (a) and (b) with the earthquake series and the explosion series . In addition, plot (or sketch) and compare the signal modulators.
+
+We see that the time scale of the explosion is shorter than the earthquake. The modulators show the scale of the dampening effect.  The second plot is consistent with the slow damping of the oscillations seen in the earthquake. 
+
+
+###1.3 Autoregression
+
+Generate n = 100 observations from the autoregression $x_t = - 0.9 x_{t-2} + w_t$ with $\sigma_w = 1$, using the method described in Example 1.10, page 13.
+
+Next, apply the moving average filter 
+$$v_t = \frac{(x_t + x_{t-1} + x_{t-2} + x_{t-3})}{4}$$
+to $x_t$, the data you generated. Now plot xt as a line and superimpose vt as a dashed line. Comment on the behavior of $x_t$ and how applying the moving average filter changes that behavior. 
+v = filter(x, rep(1/4, 4), sides = 1) 
+for the filter and note that the R code in Example 1.11 may be of help on how to add lines to existing plots.] 
+
+(b) Repeat (a) but with $x_t = cos( \frac{2 \pi t}{4})$. 
+
+(c) Repeat (b) but with added $N(0, 1)$ noise, 
+$$x_t = cos(\frac{2\pi t}{4}) + w_t$$.
+
+(d) Compare and contrast (a)-(c).
+
