@@ -17,7 +17,7 @@ knitr::opts_chunk$set(fig.height=5)
 knitr::opts_chunk$set(fig.width=7)
 knitr::opts_chunk$set(warning=FALSE)
 knitr::opts_chunk$set(message=TRUE)
-knitr::opts_knit$set(root.dir = "C:/E/AppliedTimeSeriesAnalysisWithR")
+knitr::opts_knit$set(root.dir = "C:/E/applied-time-series-analysis-with-R")
 
 ```
 
@@ -29,6 +29,9 @@ knitr::opts_knit$set(root.dir = "C:/E/AppliedTimeSeriesAnalysisWithR")
 #devtools::install_github("nickpoison/astsa")
 library(astsa)
 
+install.packages('latex2exp')
+
+library(latex2exp)
 ```
 
 ###1.1 Compare Earthquake and Explsion
@@ -90,16 +93,62 @@ We see that the time scale of the explosion is shorter than the earthquake. The 
 
 Generate n = 100 observations from the autoregression $x_t = - 0.9 x_{t-2} + w_t$ with $\sigma_w = 1$, using the method described in Example 1.10, page 13.
 
+```{r}
+w = rnorm(550,0,1) #50 extra to avoid startup problems 
+x = filter(w, filter=c(1,-.9), method="recursive")[-(1:50)]
+plot.ts(x, main="autoregression")
+
+```
 Next, apply the moving average filter 
 $$v_t = \frac{(x_t + x_{t-1} + x_{t-2} + x_{t-3})}{4}$$
-to $x_t$, the data you generated. Now plot xt as a line and superimpose vt as a dashed line. Comment on the behavior of $x_t$ and how applying the moving average filter changes that behavior. 
+to $x_t$, the data you generated. Now plot $x_t$ as a line and superimpose $v_t$ as a dashed line. Comment on the behavior of $x_t$ and how applying the moving average filter changes that behavior. 
+
+```{r}
 v = filter(x, rep(1/4, 4), sides = 1) 
-for the filter and note that the R code in Example 1.11 may be of help on how to add lines to existing plots.] 
+plot.ts(x, main="Autoregression")
+lines(v, lty="dashed", col='red')
+```
+
 
 (b) Repeat (a) but with $x_t = cos( \frac{2 \pi t}{4})$. 
+
+```{r}
+
+x = ts(cos(2*pi*0:500/4))
+ 
+plot(x)
+```
+
 
 (c) Repeat (b) but with added $N(0, 1)$ noise, 
 $$x_t = cos(\frac{2\pi t}{4}) + w_t$$.
 
+```{r}
+library(latex2exp)
+expmain <- TeX('$x_t = cos(\\frac{2\\pi t}{4}) + w_t$')
+
+x = ts(cos(2*pi*0:500/4) + rnorm(500,0,1))
+ 
+plot(x,main =expmain )
+```
+
 (d) Compare and contrast (a)-(c).
 
+We see that filtering the autoregrssive model smooths the time series and that adding noise to the periodic time series destroys its regularity. 
+
+
+```{r}
+
+spectrum(x)
+spectrum(v[4:500])
+
+rho_x <-spectrum(x)
+rho_v <-spectrum(v[4:500])
+
+plot(rho_x$freq, rho_x$spec, col='red',pch='*', main = "Comparing Spectum")
+lines(rho_v$freq, rho_v$spec, col='blue')
+legend("topleft", title.col = "black",
+  c("earthquake","explosion" ),
+  text.col =c("blue","red"),
+  text.font = 1, cex = 1)
+```
