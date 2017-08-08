@@ -1,0 +1,31 @@
+---
+title: "test"
+author: "Bruce Campbell"
+date: "August 1, 2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+library(tidyverse)
+library(tidyquant)
+pkgs <- c(
+    "tidyr", "lubridate", "dplyr", 
+    "broom", "tidyquant", "ggplot2", "purrr", 
+    "stringr", "knitr"
+    )
+
+# Get the downloads for the individual packages
+tidyverse_downloads <- cran_downloads(
+    packages = pkgs, 
+    from     = "2017-01-01", 
+    to       = "2017-06-30") %>%
+    tibble::as_tibble() %>%
+    group_by(package)
+
+tidyverse_downloads```

@@ -1,0 +1,91 @@
+---
+title: "test"
+author: "Bruce Campbell"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+period <- 1500
+sampleSize <- 2*period
+c0=rpois(period,.2)
+c1=rpois(period,.2)
+    
+noise = rnorm(period,0,.1)
+
+c_notGrouded <- c0 + noise
+
+series <- c(c_notGrouded,c1)
+x <-ts(series)
+
+
+plot(x)
+mean(noise)
+mean(c_notGrouded)
+mean(c1)
+mean(c0)
+sum(c_notGrouded <0)
+sum(c1<0)
+
+t.test(x = c_notGrouded,y = c1, alternative ="two.sided",var.equal = TRUE, conf.level = 0.01)
+
+var.test(x = c_notGrouded,y = c1, alternative ="two.sided")
+
+```
+
+
+##Look at many samples to get an idea of how a varying noise level may affect the 
+
+```{r}
+simulationCount <- 200
+
+tvalues <- matrix(0, nrow = simulationCount, ncol = 1)
+
+fvalues <- matrix(0, nrow = simulationCount, ncol = 1)
+
+noise.variances <- 1:simulationCount*( 1/simulationCount)
+
+for (i in 1:simulationCount)
+{
+  c0=rpois(period,.2)
+  c1=rpois(period,.2)
+      
+  noise = rnorm(period,0,noise.variances[i])
+  
+  c_notGrouded <- c0 + noise
+  
+  series <- c(c_notGrouded,c1)
+  x <-ts(series)
+  
+  ttest.results <- t.test(x = c_notGrouded,y = c1, alternative ="two.sided",var.equal = TRUE, conf.level = 0.01)
+  t.value <- ttest.results$statistic
+  tvalues[i]<- t.value
+  
+  ftest.results <- var.test(x = c_notGrouded,y = c1, alternative ="two.sided")
+  f.value <- ftest.results$statistic
+  fvalues[i] <- f.value
+
+}
+
+alpha <- 0.05
+talpha <- qt(1-alpha/2,df = sampleSize-1)
+
+hist(tvalues,40)
+abline(v=talpha, col='red')
+
+abline(v=-talpha, col='red')
+
+
+hist(fvalues,40)
+falpha <- qf(1-alpha/2,df1 = sampleSize-1,df2 = sampleSize-1)
+abline(v=falpha, col='red')
+falpha <- qf(alpha/2,df1 = sampleSize-1,df2 = sampleSize-1)
+abline(v=-falpha, col='red')
+
+```

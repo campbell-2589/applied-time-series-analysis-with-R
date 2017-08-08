@@ -27,9 +27,9 @@ knitr::opts_knit$set(root.dir = "C:/E/applied-time-series-analysis-with-R")
 ```{r}
 #install.packages("devtools")     # only need to do this once
 #devtools::install_github("nickpoison/astsa")
-library(astsa)
+#library(astsa)
 
-install.packages('latex2exp')
+#install.packages('latex2exp')
 
 library(latex2exp)
 ```
@@ -139,9 +139,6 @@ We see that filtering the autoregrssive model smooths the time series and that a
 
 ```{r}
 
-spectrum(x)
-spectrum(v[4:500])
-
 rho_x <-spectrum(x)
 rho_v <-spectrum(v[4:500])
 
@@ -152,3 +149,42 @@ legend("topleft", title.col = "black",
   text.col =c("blue","red"),
   text.font = 1, cex = 1)
 ```
+
+We see the spectral power distribution for the 2 series are different. This plot shows the discriminating capability of spectral mehods.  We can have 2 similar looking time series with very different spectrum. 
+
+
+
+```{r}
+ plot(rho_v, main = expmain)
+```
+
+
+```{r}
+plot(rho_x, main = "Earthquake")
+```
+
+
+
+
+```{r}
+c0=rpois(1500,.2)
+c1=rpois(1500,.2)
+    
+noise = rnorm(1500,0,.1)
+
+c_notGrouded <- c0 + noise
+
+series <- c(c_notGrouded,c1)
+x <-ts(series)
+
+plot(x)
+mean(noise)
+mean(c_notGrouded)
+mean(c1)
+mean(c0)
+sum(c_notGrouded <0)
+sum(c1<0)
+
+t.test(x = c_notGrouded,y = c1, alternative ="two.sided",var.equal = TRUE, conf.level = 0.01)
+```
+
