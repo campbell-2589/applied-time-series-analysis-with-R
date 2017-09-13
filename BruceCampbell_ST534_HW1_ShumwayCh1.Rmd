@@ -1,0 +1,293 @@
+---
+title: "Bruce Campell NCSU ST 534 HW 1"
+subtitle: "Probems 1.2, 1.3, 1,6, 1.7"
+author: "Shumway, Robert H.; Stoffer, David S. Time Series Analysis and Its Applications: With R Examples (Springer Texts in Statistics)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+fontsize: 12pt
+header-includes:
+   - \usepackage{bbm}
+output: pdf_document
+---
+
+---
+```{r setup, include=FALSE,echo=FALSE}
+rm(list = ls())
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(dev = 'pdf')
+knitr::opts_chunk$set(cache=TRUE)
+knitr::opts_chunk$set(tidy=TRUE)
+knitr::opts_chunk$set(prompt=FALSE)
+knitr::opts_chunk$set(fig.height=5)
+knitr::opts_chunk$set(fig.width=7)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(message=FALSE)
+knitr::opts_knit$set(root.dir = ".")
+library(latex2exp)   
+library(pander)
+library(ggplot2)
+library(ggplot2)
+library(GGally)
+```
+
+
+##Problem 1.2 Compare Signal Plus Noise Model with dampening oscillations. 
+
+Plot and Compare signal plus noise model with dampening oscillations.
+Consider a signal-plus-noise model of the general form $x_t = s_t + w_t$, where $w_t$ is Gaussian white noise with $\sigma^2_w = 1$. Simulate and plot $n = 200$ observations from each of the following two models
+
+### (a) $x_t = s_t + w_t$, for $t = 1,..., 200$ where 
+
+$$s_t = 0, t = 1,..., 100$$ 
+$$10 \;e^{  \frac{( 100 \, t)}{20} }  cos(\frac{2\pi t}{4}) \;\;:\;\; t = 101,..., 200$$ 
+
+
+```{r}
+s = c(rep(0,100), 10*exp(-(1:100)/20)*cos(2*pi*1:100/4))
+x = ts(s + rnorm(200, 0, 1)) 
+plot(x) 
+envelopeU = c(rep(0,100), 10*exp(-(1:100)/20))
+envelopeL = -1* c(rep(0,100), 10*exp(-(1:100)/20))
+lines(envelopeU,col='red')
+lines(envelopeL,col='red')
+title(TeX("$s_t = 10 \\, e^{ \\frac{(100 \\, t)}{20} } cos(\\frac{2 \\pi t}{4})  \\;\\;: \\;\\; t > 100$"))
+
+```
+
+
+### (b) Plot  $x_t = s_t + w_t$, for $t = 1,..., 200$ 
+
+where  $$s_t =0 \;\; t=1, ... ,100$$ and  $$s_t = 10 \, e^{ \frac{(100 \, t)} {200} } cos(\frac{2 \pi t}{4})  \;\;: \;\; t = 101,..., 200$$
+
+```{r}
+s = c(rep(0,100), 10*exp(-(1:100)/200)*cos(2*pi*1:100/4))
+x = ts(s + rnorm(200, 0, 1)) 
+plot(x) 
+
+envelopeU = c(rep(0,100), 10*exp(-(1:100)/200))
+envelopeL = -1* c(rep(0,100), 10*exp(-(1:100)/200))
+lines(envelopeU,col='red')
+lines(envelopeL,col='red')
+title(TeX("$s_t = 10 \\, e^{ \\frac{(100 \\, t)}{200} } cos(\\frac{2 \\pi t}{4})  \\;\\;: \\;\\; t > 100$"))
+```
+
+### (c) Compare the general appearance of the series (a) and (b) with the earthquake series and the explosion series . In addition, plot (or sketch) and compare the signal modulators.
+
+We see that the time scale of the explosion is shorter than the earthquake. The modulators show the scale of the dampening effect.  The second plot is consistent with the slow damping of the oscillations seen in the earthquake and the first plot is consistent with the dampening scale of the explosion. 
+
+##Problem 1.3 Autoregression and Moving Average filter. 
+
+Generate n = 100 observations from the autoregression $x_t = - 0.9 x_{t-2} + w_t$ with $\sigma_w = 1$, using the method described in Example 1.10, page 13.
+
+```{r}
+w <- rnorm(120,0,1) #20 extra to avoid startup problems 
+x.ar <- filter(w, filter=c(1,-.9), method="recursive")[-(1:20)]
+plot.ts(x.ar, main=TeX("autoregression  :  $x_t = - 0.9 x_{t-2} + w_t$"))
+```
+Next, apply the moving average filter 
+$$v_t = \frac{(x_t + x_{t-1} + x_{t-2} + x_{t-3})}{4}$$
+to $x_t$, the data you generated. Now plot $x_t$ as a line and superimpose $v_t$ as a dashed line. Comment on the behavior of $x_t$ and how applying the moving average filter changes that behavior. 
+
+```{r}
+v.ar = filter(x.ar, rep(1/4, 4), sides = 1) 
+plot.ts(x.ar, main=TeX("Autoregression $x_t$ with MA(4) $v_t = \\frac{(x_t + x_{t-1} + x_{t-2} + x_{t-3})}{4}$ in red"))
+lines(v.ar, lty="dashed", col='red')
+```
+It appears that the MA filter dampens the oscillations. The MA filter also shifts the phase forward slightly at a scale comparable to the size of the filter. 
+
+### (b) Repeat (a) but with $x_t = cos( \frac{2 \pi t}{4})$. 
+
+```{r}
+epsilon<- 0.2
+# We prime with 20 points and display the last 100
+x.cos <- ts(cos(2*pi*0:120*epsilon/4) )
+v.cos <-filter(x.cos, rep(1/4, 4), sides = 1) 
+plot.ts(x.cos[-(1:20)], main=TeX("  $x_t = cos(\\frac{2\\pi t}{4})$ MA of $x_t$ in red"))
+lines(v.cos[-(1:20)], lty="dashed", col='red')
+abline(v=21)
+abline(v=23)
+```
+
+
+### (c) Repeat (b) but with added $N(0, 1)$ noise, $$x_t = cos(\frac{2\pi t}{4}) + w_t$$.
+
+```{r}
+# We prime with 20 points and display the last 100
+x.cos.noise = ts(cos(2*pi*0:120*epsilon/4) + rnorm(120,0,1))
+ 
+v.cos.noise = filter(x.cos.noise, rep(1/4, 4), sides = 1) 
+plot.ts(x.cos.noise[-(1:20)], main=TeX(" $x_t = cos(\\frac{2\\pi t}{4}) + w_t$ MA of $x_t$ in red"))
+lines(v.cos.noise[-(1:20)], lty="dashed", col='red')
+```
+
+###(d) Compare and contrast (a)-(c).
+
+Filtering the autoregrssive model smooths the time series and that adding noise to the periodic time series destroys its regularity. We see more clearly the phase shift in the plot for $$v_t = MA(x_t)$$ where $x_t= cos(\frac{2\pi t}{4})$.  The scale of the phase shift looks like half the filter size of the MA filter. 
+
+while applying the MA to the autoregression time series dampens the oscillations, we see that applying it to the periodic function with noise appears to recover some of the periodicity.  
+
+For fun we plot the power spectrum from the 2 series in parts c) and a) below.
+
+
+```{r}
+
+rho_x <-spectrum(x.cos.noise[20:120],plot=FALSE)
+rho_v <-spectrum(v.cos.noise[20:120],plot=FALSE)
+
+plot(rho_x$freq, rho_x$spec, col='red',pch='*', main = "Comparing Spectum For Periodic Series")
+lines(rho_v$freq, rho_v$spec, col='blue')
+legend("topright", title.col = "black",
+  c(TeX("Spectrum of $v_t=MA(x_t)$"),TeX("Spectrum of $x_t = cos(\\frac{2 \\pi t}{4}) + w_t$") ),  text.col =c("blue","red"),
+  text.font = 1, cex = 1)
+```
+Looking at the spectrum for the autoregression series.
+
+```{r}
+rho_x <-spectrum(x.ar,plot=FALSE)
+rho_v <-spectrum(v.ar[4:100],plot=FALSE)
+
+plot(rho_x$freq, rho_x$spec, col='red',pch='*', main = "Comparing Spectum For Autoregressive Series")
+lines(rho_v$freq, rho_v$spec, col='blue')
+legend("topright", title.col = "black",
+  c(TeX("Spectrum of $v_t=MA(x_t)$"),TeX("Spectrum of $x_t = - 0.9 x_{t-2} + w_t") ),  text.col =c("blue","red"),
+  text.font = 1, cex = 1)
+```
+
+
+## Problem 1.6 Stationarity
+
+Consider the time series $x_t= \beta_1+ \beta_2 t + w_t$, where $\beta_1$ and $\beta_2$ are known constants and $w_t$ is a white noise process with variance $\sigma_w^2$. 
+
+###(a) Determine whether $x_t$ is stationary. 
+
+First we'll determine the mean function $\mu_t$ for $x_t$.  
+
+$$\mu^x_t = E[x_t] = E[\beta_1+ \beta_2 t + w_t] = \beta_1+ \beta_2 t$$ 
+
+We see that $\mu^x_t \neq \mu^x_s \;\; \forall \; t \neq s$.  This implies that $x_t$ is not stationary.  
+
+###(b) Show that the process $y_t = x_t - x_{t-1}$ is stationary.
+
+First we verify the mean condition for stationarity. 
+
+$$\mu^y_t = E[y_t] =  E[x_t - x_{t-1}]   = E[ (\beta_1+ \beta_2 t + w_t) - (\beta_1+ \beta_2 (t-1) + w_{t-1}) ] = \beta_2$$ 
+We have that $\mu^y_t = \mu^y_s = \beta_2 \;\; \forall \; t , s$.  We need to verify the constraint on the autocovariance of $y_t$
+
+$$\gamma_y(s,t) = cov(y_s,y_t) = E[(y_s-\mu^y_s)(y_t - \mu^y_t)]$$ 
+
+Now $y_t = x_t - x_{t-1} = \beta_2 +w_t-w_{t-1}$ so we have 
+
+$$\gamma(t,s) = Cov(w_t- w_{t-1}+\beta_2, w_s-w_{s-1} + \beta_2) = Cov(w_t- w_{t-1}, w_s-w_{s-1})$$ where we've used basic properties of covariance in the last equality. There are four cases to consider that give non zero covariance when we expand the above expression into the individual terms. 
+
+$$
+\begin{cases}
+s=t & |s-t|=0 \\
+s-1 = t & |s-t|=1 \\
+s=t-1 & |s-t|=1 \\
+&|s-t|>2
+\end{cases}
+$$ 
+
+$$Cov(w_t- w_{t-1}, w_s-w_{s-1})==Cov(w_t,w_s) - Cov(w_t,w_{s-1})-Cov(w_{t-1},w_s)+Cov(w_{t-1},w_{s-1})$$
+The cases correspond to overlap of zero, one, or two of the random variables in the above expression. 
+
+Picking out the terms for each of these conditions we have the autocovariance is given by
+
+$$\gamma(t,s) = 
+\begin{cases}
+2 \sigma^2 & |s-t|=0 \\
+-\sigma^2 & |s-t|=1 \\
+0 & |s-t|>2
+\end{cases}
+$$
+
+###(c) Show that the mean of the moving average $v_t = \frac{1}{2q+1} \sum\limits_{j=-q}^{q} x_{t-j}$ is $\beta_1+\beta_2 \,t$, and give a simplified expression for the autocovariance function.
+
+$v_t = \frac{1}{2q+1} \sum\limits_{j=-q}^{q} x_{t-j}$ is $\beta_1+\beta_2 \,t$
+
+$$E[v_t] = E[\frac{1}{2q+1} \sum\limits_{j=-q}^{q} x_{t-j}] = \frac{1}{2q+1} \sum\limits_{j=-q}^{q} E[\beta_1 + \beta_2 (t-j) +w_{t-j}]$$ 
+From which we have that 
+
+$$E[v_t] =  \frac{1}{2q+1} ( (2q+1)\beta_1 + \beta_2 \,( t  +\sum\limits_{j=-q}^{q} -j ) +\sum\limits_{j=-q}^{q} E[w_{t-j}] \,)$$ 
+Since $\sum\limits_{j=-q}^{q} -j =0$ and $E[w_{t-j}]=0 \, \forall t,j$ we see
+
+$$E[v_t]=\beta_1 + \beta_2 t$$
+For the autocovariance function we can generalize our earlier approach.  We think of the moving average series $v_t$ as a filter running over $x_t$. The filter is a vector $a^\intercal = (\frac{1}{2q+1} \ldots \frac{1}{2q+1})$ with $2q+1$ terms and the response at $t$ is $a^\intercal (x_{t-q}, \ldots , x_t, \ldots ,x_{t+q})$.  If we fix a point $t$ and consider how that point is affected as the filter arrives from the left, is centered at $t$ and then leaves. We need to consider the overlap of the filter at each $s$ where there is overlap with $t' \in {t-q, \ldots ,t, \ldots t+q}$.  We won't write down the expansion of $\gamma(t,s) = Cov(v_t,v_s)$ but it should be clear that 
+
+$$\gamma(t,s) = 
+\begin{cases}
+\frac{2q+1}{2q+1}\sigma^2= \sigma^2 & |s-t|=0 \\
+\\
+\frac{(2q+1) -1}{2q+1}\sigma^2 & |s-t|=1 \\
+\\
+\frac{(2q+1) -2}{2q+1}\sigma^2 & |s-t|=2 \\
+\;\;\;\; \vdots\\
+\frac{(2q+1) -(2q)}{2q+1}\sigma^2 & |s-t|=q \\
+\\
+ 0 & \forall \;\;|s-t|>q 
+\end{cases}
+$$
+Simplifying this,
+$$\gamma(t,s) = 
+\begin{cases}
+\sigma^2= \sigma^2 & |s-t|=0 \\
+\\
+\frac{2q}{2q+1}\sigma^2 & |s-t|=1 \\
+\\
+\frac{2q-1}{2q+1}\sigma^2 & |s-t|=2 \\
+\;\;\;\; \vdots\\
+\frac{1}{2q+1}\sigma^2 & |s-t|=q \\
+\\
+ 0 & \forall \;\;|s-t|>q 
+\end{cases}
+$$
+
+## Problem 1.7 ACF
+For a moving average process of the form $x_t=w_{t-1}+2 w{t}+ w_{t+1}$, where $w_t$ are independent with zero means and variance $\sigma^2$, determine the autocovariance and autocorrelation functions as a function of lag $h = s-t$ and plot the ACF as a function of $h$.
+
+Appealing to the arguments above for part C of 1.6 or the expansion of the covariance of linear combination of random variables $\gamma(t,s)=Cov(x_t,x_s)=Cov(w_{t-1}+2 w{t}+ w_{t+1},w_{s-1}+2 w{s}+ w_{s+1}))$  
+
+We have that
+
+$$\gamma(t,s) = 
+\begin{cases}
+6 \sigma^2 & |s-t|=0 \\
+\\
+4 \sigma^2 & |s-t|=1 \\
+\\
+\sigma^2 & |s-t|=2 \\
+\\
+ 0 & \forall \;\;|s-t|>2 
+\end{cases}
+$$ 
+
+Expressing this as a function of $h=s-t$
+
+$$\gamma(h)=
+\begin{cases}
+6 \sigma^2 & h=0 \\
+\\
+4 \sigma^2 & h=1 \\
+\\
+\sigma^2 & h=2 \\
+\\
+ 0 & \forall \;\;h>2 
+\end{cases}
+$$
+Now since $\rho(s,t)=\frac{\gamma(s,t)}{\sqrt{\gamma(s,s)\gamma(t,t)}}$ we have from the above that
+
+$$\rho(h)=\frac{\gamma(h)}{\sqrt{\gamma(0)\gamma(0)}}
+=
+\begin{cases}
+1 & h=0 \\
+\\
+\frac{4}{6} \sigma^2 & h=1 \\
+\\
+\frac{1}{6} & h=2 \\
+\\
+ 0 & \forall \;\;h>2 
+\end{cases}
+$$
+```{r}
+df <-data.frame(h=c(-5,-4,-3,-2,-1,0,1,2,3,4,5), rho=c(0,0,0,1/6,4/6,1,4/6,1/6,0,0,0))
+ggplot(data=df,aes(x=h,y=rho)) + geom_point() + ggtitle(TeX("$\\rho(h)$"))
+```
