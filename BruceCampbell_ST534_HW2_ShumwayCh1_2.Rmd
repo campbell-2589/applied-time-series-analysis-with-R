@@ -1,6 +1,6 @@
 ---
-title: "Bruce Campell NCSU ST 534 HW 1"
-subtitle: "Probems 1.2, 1.3, 1,6, 1.7"
+title: "Bruce Campell NCSU ST 534 HW 2"
+subtitle: "Probems 1.15, 1.20, 1.27, 2.3"
 author: "Shumway, Robert H.; Stoffer, David S. Time Series Analysis and Its Applications: With R Examples (Springer Texts in Statistics)"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 fontsize: 12pt
@@ -29,5 +29,59 @@ library(ggplot2)
 library(GGally)
 ```
 
+### 1.15 
 
-## Homework 2 : Problems 1.15, 1.20, 1.27, from CH1 and problem 2.3 from CH2. 
+Let $w_t$, for $t = 0,  \pm 1, \pm 2,...$ be a normal white noise process, and consider the series $x_t = w_t w_{t???1}$. Determine the mean and autocovariance function of $x_t$, and state whether it is stationary.
+
+### 1.20 
+
+(a) Simulate a series of $n = 500$ Gaussian white noise observations as in Example 1.8 and compute the sample $ACF$, $\hat{\rho}(h)$, to lag 20. Compare the sample ACF you obtain to the actual ACF, $\rho(h)$.
+
+In the plot the dotted line is at $\pm \frac{ z_{(0.05)} } {\sqrt{n}}$, this is the level $\alpha=0.05$ Wald test for the hypothesis $H_0 : acf(i)=0$.   
+
+```{r}
+w = rnorm(500,0,1)
+plot(ts(w))
+acf(w,lag.max = 20)
+```
+
+The true acf is zero for all $i \ne 0$ Most of non-zero the entries in the empirical acf from the simulated data are within the bounds of $\pm \frac{ z_{(0.05)} } {\sqrt{n}}$. 
+
+(b) Repeat part (a) using only n = 50. How does changing n affect the results?
+
+```{r}
+w = rnorm(50,0,1)
+plot(ts(w))
+acf(w,lag.max = 20)
+```
+Again, most of non-zero the entries are within the bounds of $\pm \frac{ z_{(0.05)} } {\sqrt{n}}$. Note that because $n$ is smaller the scale of $\pm \frac{ z_{(0.05)} } {\sqrt{n}}$ is larger and generally the acf values fr $i \ne 0$ are increased.  If we do the same experiment for 5000 samples we'll see this effect - in the other direction - more dramatically.  
+
+
+
+```{r}
+w = rnorm(5000,0,1)
+plot(ts(w))
+acf(w,lag.max = 20)
+```
+
+Since we have more samples, there's more evidence to provide in assesing the correlation between $x_t$ and $x_s$, and the entries are closer to the true values.  
+
+### 1.27 
+
+A concept used in geostatistics, see Journel and Huijbregts (1978) or Cressie (1993), is that of the variogram, defined for a spatial process $x_s$, $s = (s1, s2)$, for $s1, s2 = 0, \pm 1, \pm 2,...$, as $V_x(h) = \frac{1}{2} E[(x_s+h ??? x_s)^2]$, where $h = (h1, h2)$, for $h1, h2 = 0, \pm 1, \pm2,..$. Show that, for a stationary process, the variogram and autocovariance functions can be related through $V_x(h) = \gamma(0) ??? \gamma(h)$, where $\gamma(h)$ is the usual $lag h$ covariance function and $0 = (0, 0)$. Note the easy extension to any spatial dimension.
+
+### 2.3 
+
+Repeat the following exercise six times and then discuss the results. Generate a random walk with drift, (1.4), of length $n = 100$ with $\delta = .01$ and $sigma_w = 1$. Call the data $x_t$ for $t = 1,..., 100$. Fit the regression $x_t = \beta t + w_t$ using least squares. Plot the data, the mean function (i.e., $µ_t = .01 t$) and the fitted line, $\hat{x_t} = \hat{\beta} t$  , on the same graph. Discuss your results.
+
+```{r}
+par(mfcol = c(3,2)) #set up graphics 
+for (i in 1:6)
+{ 
+  x = ts(cumsum(rnorm(10000,.01,1))) #the data 
+  reg = lm(x~0+time(x), na.action=NULL) #the regression 
+  plot(x) #plot data
+  lines(.01*time(x), col="red", lty="dashed") #plot mean 
+  abline(reg, col="blue")
+} #plot regression line
+```
