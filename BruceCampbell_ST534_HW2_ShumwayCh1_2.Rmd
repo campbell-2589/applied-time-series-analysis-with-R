@@ -156,7 +156,7 @@ for (i in 1:6)
 
 The regression line does a good job of identifying the trend in the series. We see that the regression line and the drift do not agree.  The regression line does a much better job of identifying the trend in this case. If we reduce the variance of the white noise process in the random walk with drift model we would expect to see greater alignment between the drift term and the regression.  Also, if we increase the number of points in the series we would expect to achieve greater alignment in between the drift t and the regression. 
 
-Below is an example where we've reduced the variance  of the white noise fro $1$ to $0.5$ and have increased the length of the series from $100$ to $10000$.  We see the long term agreement is much better for these examples. 
+Below is an example where we've reduced the variance  of the white noise fro $1$ to $0.5$ and have increased the length of the series from $100$ to $10000$.  We see the long term agreement is much better for some of these examples. 
 
 ```{r,echo=FALSE}
 par(mfcol = c(3,2))
@@ -195,6 +195,7 @@ legend("topleft", title.col = "black",c("simulated","fitted normal" ),text.col =
 
 
 If we lower the standard deviation of the white noise we see the same distribution but with a much smaller variance about the drift. 
+
 ```{r,echo=FALSE}
 simulationCount <- 5000
 bvalues <- matrix(0, nrow = simulationCount, ncol = 1)
