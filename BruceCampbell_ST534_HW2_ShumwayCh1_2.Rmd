@@ -1,5 +1,7 @@
 ---
-title: "Bruce Campell NCSU ST 534 Exam 1"
+title: "Bruce Campell NCSU ST 534 HW 2"
+subtitle: "Probems 1.15, 1.20, 1.27, 2.3"
+author: "Shumway, Robert H.; Stoffer, David S. Time Series Analysis and Its Applications: With R Examples (Springer Texts in Statistics)"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 fontsize: 12pt
 header-includes:
@@ -27,204 +29,187 @@ library(ggplot2)
 library(GGally)
 ```
 
-#1 
-Generate a time series x of length 500 using the following R commands:
+### 1.15 
+
+Let $w_t$, for $t = 0,  \pm 1, \pm 2,...$ be a normal white noise process, and consider the series $x_t = w_t w_{t-1}$. Determine the mean and autocovariance function of $x_t$, and state whether it is stationary.
+
+$$\mu_t = E[x_t] = E[w_t w_{t-1}]$$ and since $w_t \perp w_{t-1}$ 
+
+$$E[w_t w_{t-1}] =E[w_t] \, E[w_{t-1}]$$  
+
+$\forall t \; E[w_t]=0$  so we have that the mean function of $x_t$ is $\mu_t = 0$
+
+The autocovariance of $x_t$ is defined by
+
+$$\gamma(s,t) = E[(x_t -\mu_t)(x_s-\mu_s)]$$ since $\mu_t=\mu_s \; \forall s,t$ we have that
+
+$$\gamma(s,t) = E[x_t x_s] = E[w_t \, w_{t-1} \, w_s \, w_{s-1}]$$
+
+There are several cases we need to consider when evaluating the expectation 
+
+$$
+\begin{cases}
+s=t \\
+s=t-1 \\
+s=t+1 \\
+|s-t| >1
+\end{cases}
+$$
+
+When $s=t$ $\gamma(s,t)=\gamma(t,t)=E[w_t^2 w_{t-1}^2] =  E[w_t^2] \; E[w_{t-1}^2]$ since  $w_t \perp w_{t-1}$  Now since $w_t$ is a mean zero white noise process we have
+
+$$(\frac{w_t}{\sigma_w})^2 \sim \chi_1^2 \implies   E[w_t^2] = \sigma_w^2 E[(\frac{w_t}{\sigma_w})^2] = \sigma_w^2 \times 1$$
+Where we've used that $E[\chi_1^2]=1$ in the last step. We have a similar result for $E[w_{t-1}^2]$ so $\gamma(t,t)= (\sigma_w^2)^2$
+
+When $s=t-1$ $\gamma(s,t)=\gamma(t-1,t)=E[w_{t-1} w_{t-2} \, w_t w_{t-1}] = E[w_{t-1}^2] \, E[w_{t-2} \, w_t ] =(\sigma_w^2) \times 0 =0$  since $w_{t-2} \perp w_{t-1} \perp w_t$ A similar calculation for the case $s=t+1$ yields that $\gamma(t+1,t) =0$
+
+Lastly, when $|s-t|>1$ we have no overlapping terms in the expectation $E[w_t \, w_{t-1} \, w_s \, w_{s-1}]$ so in that case we also have $\gamma(s,t)=0$
+
+We see that 
+
+$$ \gamma(s,t) = \,
+\begin{cases}
+(\sigma_w^2)^2  \;\;| s=t\\
+0  \;\;\;\;\;\;\;\;|s \neq t 
+\end{cases}
+$$
+
+Rewriting this 
+$$\gamma(h) = \,
+\begin{cases}
+(\sigma_w^2)^2  \;\;| h=0\\
+0  \;\;\;\;\;\;\;\;|h \neq 0 
+\end{cases}
+$$
+Since the mean function is zero and the autocovariance is only a function of the lag between $s,t$ we have that $x_t$ is second order stationary. 
+
+### 1.20 
+
+Simulate a series of $n = 500$ Gaussian white noise observations as in Example 1.8 and compute the sample $ACF$, $\hat{\rho}(h)$, to lag 20. Compare the sample ACF you obtain to the actual ACF, $\rho(h)$.
+
+In the plot the dotted line is at $\pm \frac{ z_{(0.05)} } {\sqrt{n}}$, this is the level $\alpha=0.05$ Wald test for the hypothesis $H_0 : acf(i)=0$.   
 
 ```{r}
-t<-seq(1:500)
-x<-cos(2* pi* .2 *t)+ (1-t/250)^3+rnorm(500)
-x<-ts(x)
-x.no.noise <- cos(2* pi* .2 *t)+ (1-t/250)^3
+w = rnorm(500,0,1)
+plot(ts(w), main = "simulated series")
+acf(w,lag.max = 20)
 ```
 
-##(a) Plot x. Does the plot appear to be stationary?
+The true acf is zero for all $i \ne 0$ Most of non-zero the entries in the empirical acf from the simulated data are within the bounds of $\pm \frac{ z_{(0.05)} } {\sqrt{n}}$. 
+
+Repeat part (a) using only n = 50. How does changing n affect the results?
+
+```{r}
+w = rnorm(50,0,1)
+plot(ts(w),main = "simulated series n=50")
+acf(w,lag.max = 20)
+```
+Again, most of non-zero the entries are within the bounds of $\pm \frac{ z_{(0.05)} } {\sqrt{n}}$. Note that because $n$ is smaller the scale of $\pm \frac{ z_{(0.05)} } {\sqrt{n}}$ is larger and generally the acf values for $i \ne 0$ are increased.  If we do the same experiment for 5000 samples we'll see this effect - in the other direction - more dramatically.  
+
+```{r}
+w = rnorm(5000,0,1)
+plot(ts(w), main = "simulated series n=5000")
+acf(w,lag.max = 20)
+```
+
+Since we have more samples, there's more evidence to provide in assessing the correlation between $x_t$ and $x_s$, and the entries are closer to the true values.  
+
+### 1.27 
+
+A concept used in geostatistics, see Journel and Huijbregts (1978) or Cressie (1993), is that of the variogram, defined for a spatial process $x_s$, $s = (s1, s2)$, for $s1, s2 = 0, \pm 1, \pm 2,...$, as $V_x(h) = \frac{1}{2} E[(x_s+h- x_s)^2]$, where $h = (h1, h2)$, for $h1, h2 = 0, \pm 1, \pm2,..$. Show that, for a stationary process, the variogram and autocovariance functions can be related through $V_x(h) = \gamma(0) - \gamma(h)$, where $\gamma(h)$ is the usual $lag h$ covariance function and $0 = (0, 0)$. Note the easy extension to any spatial dimension.
+
+
+$$2 \times V_x(h) = Var(x_{s_h} - x_s)= E[(x_{s_h} - x_s)^2] - E[(x_{s_h} - x_s)]^2$$ 
+
+Now since we have second order stationarity $\mu_s=E[x_s]=\mu \;\;\forall s$ and $E[(x_{s+h}-x_s)]=0 \; \forall s,h$
+
+Now multiplying out the terms in the first part of the expression for the variaogram
+
+$$2 \times V_x(h) = E[(x_{s_h} - x_s)^2]=E[x_{s+h}^2 ] - 2 E[x_s x_{s+h}] + E[x_s^2]$$
+
+Now $E[x_{s+h}^2]=E[x_{s}^2]=\gamma(0)$ and $E[x_s x_{s+h}]=\gamma(h)$ so $E[(x_{s_h} - x_s)^2] = 2\gamma(0) -2\gamma(h)$ and
+
+
+$$V_x(h) = \frac{1}{2} E[(x_s+h- x_s)^2] =\gamma(0) -\gamma(h)$$
+
+When $x_s$ is stationary. 
+
+### 2.3 
+
+Repeat the following exercise six times and then discuss the results. Generate a random walk with drift, (1.4), of length $n = 100$ with $\delta = .01$ and $sigma_w = 1$. Call the data $x_t$ for $t = 1,..., 100$. Fit the regression $x_t = \beta t + w_t$ using least squares. Plot the data, the mean function (i.e., $µ_t = .01 t$) and the fitted line, $\hat{x_t} = \hat{\beta} t$  , on the same graph. Discuss your results.
+
+#### 100 Points
+```{r, echo=FALSE}
+options(digits=3)
+par(mfcol = c(3,2)) 
+for (i in 1:6)
+{ 
+  x = ts(cumsum(rnorm(100,.01,1))) 
+  reg = lm(x~0+time(x), na.action=NULL) 
+  coeff<- summary(reg)$coefficients[1, 1]
+  pval <- summary(reg)$coefficients[1, 4]
+  plot(x, main =paste("Regression coeff =",signif(coeff,digits = 3), sep = '')) 
+  lines(.01*time(x), col="red", lty="dashed") 
+  abline(reg, col="blue")
+}
+```
+
+The regression line does a good job of identifying the trend in the series. We see that the regression line and the drift do not agree.  The regression line does a much better job of identifying the trend in this case. If we reduce the variance of the white noise process in the random walk with drift model we would expect to see greater alignment between the drift term and the regression.  Also, if we increase the number of points in the series we would expect to achieve greater alignment in between the drift t and the regression. 
+
+Below is an example where we've reduced the variance  of the white noise fro $1$ to $0.5$ and have increased the length of the series from $100$ to $10000$.  We see the long term agreement is much better for some of these examples. 
 
 ```{r,echo=FALSE}
-plot(x)
-sm <-mean(x)
-plot(x, main = "time series along with sample mean and underlying noisless series")
-plot(x)
-points(t,x.no.noise,col='blue',pch='*')
-abline(h=sm, col='red')
-legend("topright", title.col = "black",c("time series","no noise term","sample mean" ), text.col =c("black","blue","red"))
-```
-
-This time series does not appear stationary, The mean function apperears to have drift and the variance does not appear constant. 
-
-##(b) Plot the ACF of x. What feature(s) do(es) the acf-plot reveal ? 
-
-```{r echo=FALSE}
-acf(x)
-```
-
-We see negative autocorrelation at lags 2,3  and lags $l_i : l_i \ni  2 mod 5 =0,l_i \ni  3 mod 5 =0FIX$.
-We see positive autocorrelation at lags 4,5,6 with the strongest peak at lag 5. 
-
-
-##(c) Plot x and overlay two kernel smoothed curves using the Gaussian ("normal")
-kernel with two different choices of the bandwidth b = 30; 50. 
-
-```{r, echo=FALSE}
-plot(x)
-lines(ksmooth(time(x),x, "normal", bandwidth = 30), col='red')
-lines(ksmooth(time(x),x, "normal", bandwidth = 50), col='blue')
-#lines(ksmooth(time(x),x, "normal", bandwidth = 1/.2), col='cyan')
-```
-
-(d) Which of the two smoothed curves (or the bandwidths) gives a better description
-of the "trend function" $g(t) = (1-\frac{t}{250})$ ? Justify your answer by relating the
-bandwidth choice with the period of the cyclical component.
-
-The kernel with the larger bandwidth will capture the trend better. 
-
-
-#2 Consider the time series varve given in the package ASTSA.
-(a) Show that the varve series is heteroscedastic by computing the sample variances
-over the first and the second half of the data. 
-
-```{r}
-rm(list = ls())
-library(astsa)
-data(varve, package="astsa")
-plot(ts(varve))
-n.tics <- length(varve)
-
-left.half <- window(varve,start = 1,end = floor(length(varve) /2))
-right.half <- window (varve,start=floor(length(varve) /2) +1, end = length(varve))
-
-mean.left <- mean(left.half)
-mean.right <- mean(right.half)
-pander(data.frame(mean.left = mean.left, mean.right = mean.right), caption = "Sample means for right and left half of varve ts")
-
-var.left <- var(left.half)
-var.right <- var(right.half)
-
-pander(data.frame(var.left = var.left, var.right = var.right), caption = "Sample variances for right and left half of varve ts")
-```
-
-(b) Let x1 denote the first half of the varve series scaled by the sample standard
-deviation of the first half, and similarly, let x2 denote the second half of the
-varve series scaled by the sample standard deviation of the second half. Plot the
-two subseries x1 and x2 in two panels using the plotting function mfrow=c(2,1).
-
-```{r}
-x1 <- left.half
-x2 <- right.half
-x1.scaled<- scale(left.half,center = FALSE,scale = sqrt(var.left))
-x2.scaled<- scale(right.half,center = FALSE, scale = sqrt(var.right))
-
-par(mfrow=c(2,1), mar=c(3,2,1,0)+.5, mgp=c(1.6,.6,0))
-plot(ts(x1.scaled),ylab="x1")
-plot(ts(x2.scaled),ylab="x2")
-
-```
-
-(c) Now combine the two scaled series $x1$ and $x2$, and call it $xt$. Plot the ACF of the $xt$ series and comment on its (non-)stationarity properties! 
-
-```{r}
-
-union.x <- ts(union(x1.scaled,x2.scaled))
-plot(union.x)
-acf(union.x)
-```
-
-Since the acf is slowly decaying - we have evidence of non-stationarity. We can't say for sure though, but we should definitely investigate for trend.  If we were taking the follow up course - we'd be curous about unit root test - I believe these are for detecting long range correlations in time series.
-
-###Experiments 
-
-```{r}
-fit = lm(union.x~time(union.x), na.action=NULL) 
-par(mfrow=c(2,1))
-plot(resid(fit), type="o", main="detrended")
-plot(diff(union.x), type="o", main="first difference")
-par(mfrow=c(3,1)) #plot ACFs
-acf(union.x, 48, main="Union Scaled") 
-acf(resid(fit), 48, main="detrended") 
-acf(diff(union.x), 48, main="first difference")
+par(mfcol = c(3,2))
+for (i in 1:6)
+{ 
+  x = ts(cumsum(rnorm(10000,.01,.5)))
+  reg = lm(x~0+time(x), na.action=NULL) 
+  coeff<- summary(reg)$coefficients[1, 1]
+  pval <- summary(reg)$coefficients[1, 4]
+  plot(x, main =paste("Regression coeff =",signif(coeff,digits = 3), sep = ''))
+  lines(.01*time(x), col="red", lty="dashed") 
+  abline(reg, col="blue")
+}
 ```
 
 
-(d) Consider the dfferenced time series $xdiff$ obtained from $xt$. Show that an $MA(1)$ model is appropriate for $xdiff$. 
+Here we run a simulation where we generate 5000 random walk with drift time series and fit the regression line.  We assemble the fitted slopes and display the empirical distribution with an overly of a normal distribution with mean and variance provided by the a mean and standard deviated estimated from the sample of fitted values.
 
-```{r}
-diff.union.x <- diff(union.x)
-plot(diff.union.x, type="o", main="first difference")
-acf(diff(union.x), 48, main="first difference")
+```{r,echo=FALSE}
+simulationCount <- 5000
+bvalues <- matrix(0, nrow = simulationCount, ncol = 1)
+for (i in 1:simulationCount)
+{ 
+  x = ts(cumsum(rnorm(100,.01,1))) #the data 
+  reg = lm(x~0+time(x), na.action=NULL) #the regression 
+  bvalues[i] <- reg$coefficients[1]
+} 
+histVales <- hist(bvalues, 100,freq = FALSE,plot = FALSE)
+mean.bval = mean(bvalues)
+sd.bval <- sd(bvalues)
+plot(histVales$mids,histVales$density,col='blue',pch='*')
+lines(histVales$mids,dnorm(histVales$mids,mean.bval,sd.bval), type = "l",col="red")
+abline(v=0.01,col = 'black')
+legend("topleft", title.col = "black",c("simulated","fitted normal" ),text.col =c("blue","red"),text.font = 1, cex = 1)
 ```
 
 
-We see in autocorrelation plot of the differenced data with a 95% confidence bands that the autocorrelation at lag 1 is significant.  Based on this a MA(1) model is suggested.  If we wanted to we could investigate the PACF to look for an AR component.  
+If we lower the standard deviation of the white noise we see the same distribution but with a much smaller variance about the drift. 
 
-There are two other significant ACF values at lag 9 and 10. They are of differneing sign, and they are not that far ablove the $\alpha=0.05$ line so we claim there is no need to include them in our modelling process at this point. 
-
-
-(e) The model for $X_t = xdiff$ can be written as 
-$$X_t = \mu + W_t + \theta_1 W_{t-1}$$ 
-Where ${W_t} \sim N(-,\sigma_W)$.  Find an estimate of $\mu$.
-
-We can fit a linear model $\mu_t = \beta_0 + \beta_1 t$ and see the trend in the original series.
-
-```{r}
-fit = lm(union.x~time(union.x), na.action=NULL) 
-summary(fit)
-mean(union.x)
-plot(union.x)
-lines(fitted(fit), col='red')
+```{r,echo=FALSE}
+simulationCount <- 5000
+bvalues <- matrix(0, nrow = simulationCount, ncol = 1)
+for (i in 1:simulationCount)
+{ 
+  x = ts(cumsum(rnorm(100,.5,.1))) #the data 
+  reg = lm(x~0+time(x), na.action=NULL) #the regression 
+  bvalues[i] <- reg$coefficients[1]
+} 
+histVales <- hist(bvalues, 100,freq = FALSE,plot = FALSE)
+mean.bval = mean(bvalues)
+sd.bval <- sd(bvalues)
+plot(histVales$mids,histVales$density,col='blue',pch='*')
+lines(histVales$mids,dnorm(histVales$mids,mean.bval,sd.bval), type = "l",col="red")
+abline(v=0.5,col = 'black')
+legend("topleft", title.col = "black",c("simulated","fitted normal" ),text.col =c("blue","red"),text.font = 1, cex = 1)
 ```
-
-We know that we can also model trend as a random walk with drift $\mu_t = \delta+\mu_{t-1}+w_t$ for the differenced series we should have $\delta=0$
-Let's see what happens when we fit a linear model to the differenced series $xdiff$
-
-```{r}
-fit.diff = lm(diff.union.x~time(diff.union.x), na.action=NULL) 
-summary(fit.diff)
-mean(diff.union.x)
-plot(diff.union.x)
-lines(fitted(fit.diff), col='red')
-```
-Indeed both the intercept and slope are not significant. 
-
-Since $E[W_t] = 0 \;\;\forall t$ We have that $E[X_t]=\mu$ and it stands to reason that $\hat{\mu}=\bar{x_t}$ is a good estimate of $\mu$
-
-```{r}
-pander(data.frame(mean.xdiff=mean(diff.union.x)),capiton = "Estimate of constant in MA model")
-```
-
-
-(f) Write down the final model for the varve-series based on this analysis.
-
-
-We can use the autocovariance function
-
-
-# 3 
-Suppose that $X_t$ is an $ARMA(p,q)$ process:
-$$X_t = .5 X_{t-1} + W_t -0.7 W_{t-1} + 0.1 W_{t-1}$$
-where $W_t$ are IID $N(0,1)$.
-(a) Find $p$ and $q$. (Be sure to check for model redundancy.)
-(b) Show that $X_t$ is invertible.
-(c) Find the ACF of ${X_t}$ explicitly.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
