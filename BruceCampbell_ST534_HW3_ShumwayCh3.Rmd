@@ -1,0 +1,240 @@
+---
+title: "Bruce Campell NCSU ST 534 HW 3"
+subtitle: "Problems 3.10, 3.18, and 3.21 "
+author: "Shumway, Robert H.; Stoffer, David S. Time Series Analysis and Its Applications: With R Examples (Springer Texts in Statistics)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+fontsize: 12pt
+header-includes:
+   - \usepackage{bbm}
+output: pdf_document
+---
+
+---
+```{r setup, include=FALSE,echo=FALSE}
+rm(list = ls())
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(dev = 'pdf')
+knitr::opts_chunk$set(cache=TRUE)
+knitr::opts_chunk$set(tidy=TRUE)
+knitr::opts_chunk$set(prompt=FALSE)
+knitr::opts_chunk$set(fig.height=5)
+knitr::opts_chunk$set(fig.width=7)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(message=FALSE)
+knitr::opts_knit$set(root.dir = ".")
+library(latex2exp)   
+library(pander)
+library(ggplot2)
+library(ggplot2)
+library(GGally)
+```
+
+## 3.10 cmort analysis - prediction
+
+Let $x_t$ represent the cardiovascular mortality series (cmort) discussed in Chapter 2, Example 2.2. 
+
+### (a) Fit an $AR(2)$ to $x_t$ using linear regression as in Example 3.17. 
+
+Since the cmort data is weekly for 10 years - we choose a lag of 52 to investigate. 
+
+```{r}
+rm(list = ls())
+library(astsa)
+data(cmort, package="astsa")
+max.lag <-52 
+invisible(acf2(cmort, max.lag = max.lag) ) 
+(cmort.ar2 = ar.ols(cmort, order=2, demean=FALSE, intercept=TRUE)) 
+pander(data.frame(mean=cmort.ar2$asy.se.coef$x.mean),caption="mean")
+pander(data.frame(se.estimates=cmort.ar2$asy.se.coef$ar),caption="standard errors of the estimates")
+```
+
+From the documentation for ar.ols,model we fit is given by 
+
+$$(x[t] - m) = a[0] + a[1]*(x[t-1] - m) + . + a[p]*(x[t-p] - m) + e[t]$$ 
+
+where $a[0]$ is zero unless intercept is true, and $m$ is the sample mean if demean is true, zero otherwise.
+
+Let's plot our model and the original series.  We also check the coefficient values are consistent with those provided by stats::arima. 
+
+```{r}
+cmort.arima.fit <-arima(cmort, order=c(2,0,0))
+cmort.arima.fit
+cmort.ar2.sim <- arima.sim(list(order=c(2,0,0),ar=c(0.4286,0.4418)), sd = sqrt(32.32),n.start=52*5,n=500) + mean(cmort)
+library(zoo)
+plot.zoo(cbind(ts(cmort), ts(cmort.ar2.sim)), plot.type = "single", col = c("red", "blue"))
+legend("topleft", title.col = "black",c("cmort","AR(2) fitted" ),text.col =c("blue","red"),text.font = 1, cex = 1)
+
+acf(cmort.ar2.sim,lag.max = max.lag,main="acf of fitted")
+```
+
+Now we use the textbook author's function astsa::sarima to fit the model.
+
+```{r, echo=FALSE,results='hide',fig.keep='all'}
+invisible(cmort.fit <-sarima(cmort , 2, 0, 0))
+
+cmort.fit
+```
+
+
+### (b) Assuming the fitted model in (a) is the true model, find the forecasts over a four-week horizon, $x^n_{n n+m}$, for $m = 1, 2, 3, 4$ and the corresponding 95% prediction intervals.
+
+We plot the prediction first.  The 95% prediction interval is displayed as dashed lines.
+
+```{r}
+ols.fit = ar.ols(cmort, order=2, demean=FALSE, intercept=TRUE) 
+fore = predict(ols.fit, n.ahead=24,interval="prediction") 
+ts.plot(cmort, fore$pred, col=1:2, ylab="Mortality") 
+lines(fore$pred, type="p", col=2) 
+lines(fore$pred+1.96*fore$se, lty="dashed", col=4) 
+lines(fore$pred-1.96*fore$se, lty="dashed", col=4)
+```
+
+```{r}
+fore = predict(ols.fit, n.ahead=4,interval="prediction") 
+predicted <- fore$pred
+right.pi <- fore$pred+1.96*fore$se
+left.pi <- fore$pred-1.96*fore$se
+pi.width <- 1.96*fore$se
+pander(data.frame(left.pi=left.pi, predicted=predicted,right.pi=right.pi, pi.width=pi.width),caption="Predicted with limits of prediction interval.")
+```
+
+For fun we apply an MA(5) smoothing filter to the cmort data and see how that affects the prediction intervals.
+
+
+```{r}
+cmort.sm <- filter(na.exclude(cmort), rep(1/4, 4), sides = 1)
+cmort.sm.trim <- window(cmort.sm, start = start(cmort.sm) + 4 * deltat(cmort.sm)) 
+ols.fit = ar.ols(cmort.sm.trim, order=2, demean=FALSE, intercept=TRUE) 
+fore = predict(ols.fit, n.ahead=24,interval="prediction") 
+ts.plot(cmort.sm.trim, fore$pred, col=1:2, ylab="Mortality") 
+lines(fore$pred, type="p", col=2) 
+lines(fore$pred+1.96*fore$se, lty="dashed", col=4) 
+lines(fore$pred-1.96*fore$se, lty="dashed", col=4)
+```
+
+
+## 3.18 cmort analyis - estimation
+
+Fit an AR(2) model to the cardiovascular mortality series (cmort) discussed in Chapter 2, Example 2.2. using linear regression and using Yule- Walker. 
+
+```{r}
+ols.fit = ar.ols(cmort, order=2, demean=FALSE, intercept=TRUE)
+pander(data.frame(ar.ols = ols.fit$ar),
+       caption = "AR(2) coefficicients fit by OLS")
+cmort.yw=ar.yw(cmort, order=2)
+pander(data.frame(ar.yw =cmort.yw$ar), 
+       caption ="AR(2) coefficicients fit by Yule-Walker method")
+```
+
+(a) Compare the parameter estimates obtained by the two methods. 
+
+```{r}
+pander(data.frame(var.pred = ols.fit$var.pred),
+       caption = "AR(2) prediction variance fit by OLS")
+
+pander(data.frame(var.pred = cmort.yw$var.pred),
+       caption = "AR(2) prediction variance fit by Yule-Walker method")
+```
+
+The modesl are comparable in terms of the predcited variance.  Predicted variance is reported by both fitting methods and is and estimate of the portion of variance not explained by the fitted model. 
+
+(b) Compare the estimated standard errors of the coefficients obtained by linear regression with their corresponding asymptotic approximations, as given in Property 3.10.
+
+```{r}
+pander(data.frame(coeff.se = ols.fit$asy.se.coef$ar),
+       caption = "AR(2) coefficient standard error fit by OLS")
+
+```
+
+From the very important large sample result for the distribution of estimators of ARMA processes we know that 
+
+$$ \hat{\phi} \underset{d}\sim  N(\phi, \frac{\sigma^2 \Gamma^{-1} } {n})$$
+We can substitute our estimates $\hat{\sigma}$ and $\hat{\Gamma^{-1}}$ into this expression.  The textbook has worked out the expression for $\sigma_2 \Gamma^{-1}_{AR(2)}$
+
+$$\left(
+\begin{array}{c}
+\hat{\phi_1}\\
+\hat{\phi_2}
+\end{array}
+\right)\;\;
+\underset{d}\sim  \;\;N(
+\left(
+\begin{array}{c}
+\hat{\phi_1}\\
+\hat{\phi_2}
+\end{array}
+\right), \frac{1}{n}
+\left(
+\begin{array}{cc}
+1-\phi_2^2 & -\phi_1 (1+\phi_2)\\
+-\phi_1 (1+\phi_2) & 1-\phi_2^2
+\end{array}
+\right) \;\;)
+$$
+
++1 point for $LaTeX$ 
+
+Now calculating the approx asymptotic SE using the estimates of the coefficients from our OLS fit we have 
+
+```{r}
+
+se.phi <- sqrt( 1/length(cmort) *  (1-ols.fit$asy.se.coef$ar[1]^2) )
+
+pander(data.frame(se.asymptotic = se.phi), caption = "Asyptotic SE")
+```
+This is in agreement with the result from the ols function. 
+
+# 3.21 MLE of ARMA(1,1)
+
+Generate $10$ realizations of length $n = 200$ each of an $ARMA(1,1)$ process with $\phi = .9$ , $\theta = .5$ and $\sigma^2 = 1$. Find the MLEs of the three parameters in each case and compare the estimators to the true values.
+
+First we generate and plot one realization to get an idea of what this model looks like. 
+
+```{r}
+ar11.sim <- arima.sim(list(order=c(1,0,1),ar=c(0.9),ma=c(0.5) ), sd = 1,n.start=200,n=200)
+plot(ar11.sim)
+```
+
+We'll perform the calculations with the ```stats::arima``` function.  We need to set the method parameter to fit using maximum likelihood fitting.  Note that the book uses ar.mle for an AR process.  TOTO - revisit the relationship between these - they're both in the core stats package. 
+
+
+```{r}
+phi <- 0.9
+theta <- 0.5
+sigma.sq <- 1
+
+simulationCount<- 10
+boot.phi <- matrix(0, nrow = simulationCount, ncol = 1)
+boot.theta <- matrix(0, nrow = simulationCount, ncol = 1)
+boot.sigma.sq <- matrix(0, nrow = simulationCount, ncol = 1)
+
+
+for (i in 1:simulationCount)
+{
+  ar11.sim <- arima.sim(list(order=c(1,0,1),ar=c(phi),ma=c(theta) ), sd = sigma.sq,n.start=200,n=200)
+  ar11.est <- arima(ar11.sim,order = c(1,0,1),method="ML")
+  boot.phi[i]=ar11.est$coef[1]
+  boot.theta[i]=ar11.est$coef[2]
+  boot.sigma.sq[i]=ar11.est$sigma2
+} 
+
+plot(boot.phi,main = "estimated and actual phi")
+abline(h=phi,col='red')
+
+
+plot(boot.theta,main = "estimated and actual theta")
+abline(h=theta,col='red')
+
+
+plot(boot.sigma.sq,main = "estimated and actual sigma^2")
+abline(h=sigma.sq,col='red')
+
+```
+
+
+
+
+
+
+
+
