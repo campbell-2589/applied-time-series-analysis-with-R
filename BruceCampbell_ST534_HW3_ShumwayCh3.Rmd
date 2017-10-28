@@ -136,7 +136,7 @@ pander(data.frame(var.pred = cmort.yw$var.pred),
        caption = "AR(2) prediction variance fit by Yule-Walker method")
 ```
 
-The modesl are comparable in terms of the predcited variance.  Predicted variance is reported by both fitting methods and is and estimate of the portion of variance not explained by the fitted model. 
+The models are comparable in terms of the predicted variance.  Predicted variance is reported by both fitting methods and is and estimate of the portion of variance not explained by the fitted model. 
 
 (b) Compare the estimated standard errors of the coefficients obtained by linear regression with their corresponding asymptotic approximations, as given in Property 3.10.
 
