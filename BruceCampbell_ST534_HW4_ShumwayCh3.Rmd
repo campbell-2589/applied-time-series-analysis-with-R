@@ -1,0 +1,106 @@
+---
+title: "Bruce Campell NCSU ST 534 HW 4"
+subtitle: "Problems 3.32, 3.35(a), and 3.43 "
+author: "Shumway, Robert H.; Stoffer, David S. Time Series Analysis and Its Applications: With R Examples (Springer Texts in Statistics)"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+fontsize: 12pt
+header-includes:
+   - \usepackage{bbm}
+output: pdf_document
+---
+
+---
+```{r setup, include=FALSE,echo=FALSE}
+rm(list = ls())
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(dev = 'pdf')
+knitr::opts_chunk$set(cache=TRUE)
+knitr::opts_chunk$set(tidy=TRUE)
+knitr::opts_chunk$set(prompt=FALSE)
+knitr::opts_chunk$set(fig.height=5)
+knitr::opts_chunk$set(fig.width=7)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(message=FALSE)
+knitr::opts_knit$set(root.dir = ".")
+library(latex2exp)   
+library(pander)
+library(ggplot2)
+library(ggplot2)
+library(GGally)
+```
+
+## 3.32 oil time series analysis
+Crude oil prices in dollars per barrel are in oil; see Appendix R for more details. Fit an $ARIMA(p, d, q)$ model to the growth rate performing all necessary diagnostics. Comment.
+
+```{r}
+library(astsa)
+data(oil, package="astsa")
+df<-oil
+plot(oil, main ="Crude oil, WTI spot price FOB (in dollars per barrel) weekly")
+```
+
+Here is the acf of the oil series. 
+
+```{r,results='hide',fig.keep='all'}
+acf2(df,52)
+```
+
+As expected the trend obscures the underlying structure of the fluctuations.  We will now calculate $y_t =\nabla log(x_t)$ and display the ACF and PACF.
+
+```{r}
+y <- diff(log(df))
+plot(y, main =TeX("$y_t =\\nabla log(oil_t)$"))
+```
+
+We now see the underlying structure better.  There's a period around 2008-2009 that one could argue requires more sophisitcated modelling such as stochastic volatility. 
+
+```{r,results='hide',fig.keep='all'}
+acf2(y,52)
+```
+
+Based on the ACF and PACF of the differenced log series - we will try to fit an $ARIMA(3,1,3)$ model to $log(x_t)$
+
+```{r ,results='hide',fig.keep='all'}
+invisible(model <-sarima(df,3,1,3))
+model$ttable
+```
+
+For lag 1 the Ljung-Box statistic shows significant correlation in the residuals.  
+
+For fun let's calculate the Ljung-Box-Pierce Q-statistic to check for systemic autocorrelation in the residuals.  We'll extract the residuals and do the calculation by hand - there's and R function for this ```Box-Test```  that we've experiemnted with.  we'll revisit this.
+
+```{r}
+
+n <- length(df)
+H <- 20
+r <-model$fit$residuals[1:H]
+acf.residuals <- acf(r,H, main="ACF of residuals")
+sum.denominator <- n-seq(H, 1, by = -1)   
+r.s <-  acf.residuals$acf^2 / sum.denominator
+Q <- n*(n+2) *sum(r.s)
+Q
+```
+We see based on the Q-statistic that we have significant correlation structure remaining in the residuals. 
+
+We didn't expect the residuals to be normally distributed.  Starting in 2005 there is a change in the volatility.
+
+## 3.35 Seasonal Model 
+Consider the ARIMA model $x_t = w_t + \Theta w_{t-2}$. 
+
+(a) Identify the model using the notation $ARIMA(p, d, q) × (P, D, Q)s$
+
+This model is $ARIMA(0,0,1) \times (0,0,1)_2$ It's worth noting that it's also a $MA(2)$ with $\theta_1=0$
+
+(b) Show that the series is invertible for $|\Theta| < 1$, and find the coefficients in the representation $w_t = \sum\limits_{k=0}^{\infty} \pi_ k x_{t-k}$. 
+
+$\phi(z) = 1-\Theta \; z^2$  If $|\Theta| < 1$ the roots of $\phi(z)$ $z_o = \pm \frac{1}{\sqrt{\Theta}}$ are outside the unit circle and we have that the series is invertible. 
+
+(c) Develop equations for the m-step ahead forecast, $\tilde{x}_{n+m}$, and its variance based on the infinite past, $xn, xn???1,...$.
+
+Since the process is causal (there is no AR component to consider).  We can write $x_t = \sum\limits_{j=1}^{\infty} \psi_j w_{t-j}$  this can be the basis for a recursive prediction algorithm. First let's work out the linear process representation for this model.
+
+
+
+## 3.43 Use Theorem B.2 and B.3 to verify (3.116).
+
+
