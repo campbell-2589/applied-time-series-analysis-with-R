@@ -52,7 +52,7 @@ y <- diff(log(df))
 plot(y, main =TeX("$y_t =\\nabla log(oil_t)$"))
 ```
 
-We now see the underlying structure better.  There's a period around 2008-2009 that one could argue requires more sophisitcated modelling such as stochastic volatility. 
+We now see the underlying structure better.  There's a period around 2008-2009 that one could argue requires more sophisticated modelling such as stochastic volatility. 
 
 ```{r,results='hide',fig.keep='all'}
 acf2(y,52)
@@ -67,7 +67,7 @@ model$ttable
 
 For lag 1 the Ljung-Box statistic shows significant correlation in the residuals.  
 
-For fun let's calculate the Ljung-Box-Pierce Q-statistic to check for systemic autocorrelation in the residuals.  We'll extract the residuals and do the calculation by hand - there's and R function for this ```Box-Test```  that we've experiemnted with.  we'll revisit this.
+For fun let's calculate the Ljung-Box-Pierce Q-statistic to check for systemic autocorrelation in the residuals.  We'll extract the residuals and do the calculation by hand - there's and R function for this ```Box-Test```  that we've experimented with.  we'll revisit this.
 
 ```{r}
 
@@ -80,27 +80,169 @@ r.s <-  acf.residuals$acf^2 / sum.denominator
 Q <- n*(n+2) *sum(r.s)
 Q
 ```
+
 We see based on the Q-statistic that we have significant correlation structure remaining in the residuals. 
 
 We didn't expect the residuals to be normally distributed.  Starting in 2005 there is a change in the volatility.
 
-## 3.35 Seasonal Model 
+
+## 3.35 Sales analysis 
+
+Let $S_t$ represent the monthly sales data in sales (n = 150), and let $L_t$ be the
+leading indicator in lead.  Fit an ARIMA model to $S_t$, the monthly sales data. Discuss your model fitting
+in a step-by-step fashion, presenting your 
+(A) initial examination of the data, 
+(B) transformations, if necessary, 
+(C) initial identification of the dependence orders
+and degree of differencing, 
+(D) parameter estimation, 
+(E) residual diagnostics and model choice
+
+```{r}
+rm(list = ls())
+data(sales, package="astsa")
+df<-sales
+plot(df, main ="Sales, 150 months; from Box and Jenkins (1970).")
+```
+
+For our modelling we'll use a growth rate transformation.  
+
+```{r}
+y <- diff(log(df))
+plot(y, main =TeX("$y_t =\\nabla log(sales_t)$"))
+```
+
+Now we'll investigate the ACF/PACF plots to determine appropriate $(p,q)$ for our model. 
+
+
+```{r,results='hide',fig.keep='all'}
+acf2(y,36)
+```
+
+
+Based on the ACF/PACF we will try to model $ARMA(4,2)$ first and consider models of lower order based on experimentation.
+
+```{r ,results='hide',fig.keep='all'}
+invisible(model <-sarima(y,4,0,2))
+```
+
+```{r}
+model
+```
+
+This is a terrible model!  There is still strong trend.  We will try further differencing. We'll also experiment with the orders.
+
+```{r ,results='hide',fig.keep='all'}
+invisible(model <-sarima(y,3,2,1))
+```
+
+```{r}
+model
+```
+
+
+T
+
+## 3.43 Fit a seasonal ARIMA model of your choice to the U.S. Live Birth Series (birth).
+Use the estimated model to forecast the next 12 months.
+
+```{r}
+data(birth, package="astsa")
+df<-birth
+plot(df, main ="Monthly live births (adjusted) in thousands for the United States, 1948-1979")
+
+```
+
+Here's the ACF / PACF of the series
+
+
+```{r,results='hide',fig.keep='all'}
+acf2(df,36)
+```
+
+We see significant long range correlation so we look to differencing.
+
+```{r}
+y <- diff((df))
+plot(y, main =TeX("$y_t =\\nabla log(birth_t)$"))
+```
+
+ 
+```{r,results='hide',fig.keep='all'}
+acf2(y,48)
+```
+
+It's clear from this plot that we'll need a seasonal AR component with lag 12. It's not clear yet that we need to seasonally difference $\nabla_{12}$ so we'll fit multiple models and evaluate them by information theoretic criteria. Based on the ACF and PACF of the differenced series and some experimentation - we will try to fit these models
+
+$$ARIMA(4,1,4) \times (1,1,0)_{12}$$  and
+
+
+$$ARIMA(2,1,2) \times (1,1,1)_{12}$$ 
+
+```{r ,results='hide',fig.keep='all'}
+invisible(model <-sarima(df,4,1,4,1,1,0,12))
+```
+
+```{r}
+model
+```
+
+
+```{r ,results='hide',fig.keep='all'}
+invisible(model <-sarima(df,2,1,2,1,1,1,12))
+```
+
+```{r}
+model
+```
+
+Based on the AIC criterion We choose to use the $ARIMA(2,1,2) \times (1,1,1)_{12}$ model for prediction. 
+
+```{r}
+fore = predict(model$fit, n.ahead=12,interval="prediction") 
+ts.plot(df, fore$pred, col=1:2, ylab="time series with predicted") 
+lines(fore$pred, pch='*', col=2) 
+#lines(fore$pred+1.96*fore$se, lty="dashed", col=4) 
+#lines(fore$pred-1.96*fore$se, lty="dashed", col=4)
+```
+
+Our model worked as expected.
+
+
+## WRONG PROBLEM THIS IS FROM VERISON 3 OF THE TEXTBOOK 3.35 Seasonal Model 
 Consider the ARIMA model $x_t = w_t + \Theta w_{t-2}$. 
 
 (a) Identify the model using the notation $ARIMA(p, d, q) × (P, D, Q)s$
 
 This model is $ARIMA(0,0,1) \times (0,0,1)_2$ It's worth noting that it's also a $MA(2)$ with $\theta_1=0$
 
-(b) Show that the series is invertible for $|\Theta| < 1$, and find the coefficients in the representation $w_t = \sum\limits_{k=0}^{\infty} \pi_ k x_{t-k}$. 
+(b) Show that the series is invertable for $|\Theta| < 1$, and find the coefficients in the representation $w_t = \sum\limits_{k=0}^{\infty} \pi_ k x_{t-k}$. 
 
 $\phi(z) = 1-\Theta \; z^2$  If $|\Theta| < 1$ the roots of $\phi(z)$ $z_o = \pm \frac{1}{\sqrt{\Theta}}$ are outside the unit circle and we have that the series is invertible. 
 
-(c) Develop equations for the m-step ahead forecast, $\tilde{x}_{n+m}$, and its variance based on the infinite past, $xn, xn???1,...$.
 
-Since the process is causal (there is no AR component to consider).  We can write $x_t = \sum\limits_{j=1}^{\infty} \psi_j w_{t-j}$  this can be the basis for a recursive prediction algorithm. First let's work out the linear process representation for this model.
+## WRONG - AND VERY DIFFICULT - PROBLEM. THIS IS FROM VERISON 3 OF THE TEXTBOOK 3.43 
+Use Theorem B.2 and B.3 to verify (3.116).
+
+I actually worked on this for a day or so.  If I have time, I'd like to revisit the appendix and this problem.  The problem asks us to validate the likelihood formula for a normal ARMA model using the projection operator and a property of conditional expectation in Hilbert space.  Here's what I came up with so far.  
+
+We know that the MLE is provided by OLS, and that the projection given by the hat matrix provides the OLS transform.  This is the projection on the span of the $\{1,{z_j} \}$ from Theorem B.3. 
+
+Theorem B.2 provides a mechanism to build up estimates through projections onto nested subspaces.  It's important to note that when we're doing ML we take the data to be random variables and ask what values of the parameters best explain the data at hand. The Hilbert space we use is formed from the space of random variables ${X_t}$.  Since the process is second order stationary we know that all the information of the process is contained in the second order statistics.  The Hilbert space inner product is the covariance.  
+
+The expression for the likelihood in 3.116 looks like a transformation of the likelihood expressed by the full joint distribution to the likelihood expressed as a product of conditional distributions - but there is a lot more to it than that!  This is a complicated expression based on the past section where we calculated the MLE of $x^{t-1}_t$.  We express the conditional probabilities in terms of $x^{t-1}_t$ , $(x_t | x_{t-1} , \ldots , x_1) \sim N(x^{t-1}_t,P^{t-1}_t)$ 
+
+Since we know that OLS is a projection, and that the MLE is provided by OLS, one can see that the process of maximizing 3.116 can be cast as a problems of forming the right sequence of nested subspaces and applying the projection sequentially. The sequence of spaces is 
+
+$$ span\{x_1\} \subset span\{x_1,x_2\} \subset \ldots \subset span\{x_1 , \ldots, x_t\}$$  The hat matrix formed in each of these subspaces provides the projection we need to maximize the corresponding factor in the likelihood 3.116.
+
+What I don't understand yet is how to use the projection theorems to verify the likelihood expression 3.116. 
 
 
 
-## 3.43 Use Theorem B.2 and B.3 to verify (3.116).
+
+
+
+
 
 
