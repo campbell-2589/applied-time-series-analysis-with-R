@@ -1,5 +1,5 @@
 ---
-title: "Bruce Campell NCSU ST 534 Exam 1"
+title: "Bruce Campell NCSU ST 534 Exam 2"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 fontsize: 12pt
 header-includes:
@@ -27,343 +27,256 @@ library(ggplot2)
 library(GGally)
 ```
 
-# 1 Periodic Series With Noise
+##1 sunspotz analyis
 
-Generate a time series x of length 500 using the following R commands:
+Consider the series sunspotz in the package astsa and answer the following questions:
 
-```{r}
-t<-seq(1:500)
-x<-cos(2* pi* .2 *t)+ (1-t/250)^3+rnorm(500)
-x<-ts(x)
-x.no.noise <- cos(2* pi* .2 *t)+ (1-t/250)^3
-```
-
-## (a) Plot x. Does the plot appear to be stationary?
-
-```{r,echo=FALSE}
-plot(x)
-sm <-mean(x)
-plot(x, main = "time series along with sample mean and underlying noisless series")
-points(t,x.no.noise,col='blue',pch='*')
-abline(h=sm, col='red')
-legend("topright", title.col = "black",c("time series","no noise term","sample mean" ), text.col =c("black","blue","red"))
-```
-
-This time series does not appear stationary, The mean function appears to have drift and the variance does not appear constant. 
-
-## (b) Plot the ACF of x. What feature(s) do(es) the acf-plot reveal ? 
-
-```{r echo=FALSE}
-acf(x)
-```
-
-We see negative autocorrelation at $lags 5n+2,5n+3 n=0,1,2..$. We see positive autocorrelation at $lags 5n+4,5n+5,5n+6 n=0,1,2,...$ with the strongest peak at $lag 5$. 
-
-
-## (c) Plot x and overlay two kernel smoothed curves using the Gaussian ("normal") kernel with two different choices of the bandwidth b = 30; 50. 
-
-```{r, echo=FALSE}
-plot(x,main="Gaussian Kernel Smoothed")
-lines(ksmooth(time(x),x, "normal", bandwidth = 30), col='red')
-lines(ksmooth(time(x),x, "normal", bandwidth = 50), col='blue')
-legend("topright", title.col = "black",c("time series","bandwidth=30","bandwidth=50" ), text.col =c("black","red","blue"))
-
-#lines(ksmooth(time(x),x, "normal", bandwidth = 1/.2), col='cyan')
-```
-
-## (d) Which of the two smoothed curves (or the bandwidths) gives a better description of the "trend function" $g(t) = (1-\frac{t}{250})$ ? Justify your answer by relating the bandwidth choice with the period of the cyclical component.
-
-The kernel with the larger bandwidth will capture the trend better. For ksmooth in R the kernels are scaled so that their quartiles are at  0.25*bandwidth.  The period of the periodic component of the series is 5 for so a kernel width of 50 will cover 5 periods in the interqualrtile range and 10 over the entire bandwidth.  This will smooth out the periodic fluctuations revealing the underlying trend better.  
-
-#2 Modelling the varve series 
-
-Consider the time series varve given in the package ASTSA.
-
-## (a) Show that the varve series is heteroscedastic by computing the sample variances
-over the first and the second half of the data. 
+### (a) Plot sunspotz. Comment on the notable features of the time series? 
 
 ```{r}
 rm(list = ls())
 library(astsa)
-data(varve, package="astsa")
-plot(ts(varve))
-n.tics <- length(varve)
-
-left.half <- window(varve,start = 1,end = floor(length(varve) /2))
-right.half <- window (varve,start=floor(length(varve) /2) +1, end = length(varve))
-
-mean.left <- mean(left.half)
-mean.right <- mean(right.half)
-pander(data.frame(mean.left = mean.left, mean.right = mean.right), caption = "Sample means for right and left half of varve ts")
-
-var.left <- var(left.half)
-var.right <- var(right.half)
-
-pander(data.frame(var.left = var.left, var.right = var.right), caption = "Sample variances for right and left half of varve ts")
-
-var.test(left.half,right.half)
+data(sunspotz, package="astsa")
+df <- sunspotz
+plot(ts(df))
 ```
 
-The F-test confirms what we see - that the variances of the left and right halves are significantly different.
+From the doscumentaion sunspotz. is the *biannual smoothed (12-month moving average) number of sunspots from June 1749 to December 1978; n = 459*.  The format is ```Time Series: Start = c(1749, 1) End = c(1978, 1) Frequency = 2```  There appear to be two or more fundamental frequencies in the series.  We note the sppearance of short term and long term cyclical behavior. In regards to modelling with this data we would want to take into consideration that the period of observations is shore realtive to the eveolution of the dynamical system generating the data, and that the technology for making observations may have evolved over the period of data collecation. 
 
-## (b) Let x1 denote the first half of the varve series scaled by the sample standard
-deviation of the first half, and similarly, let x2 denote the second half of the
-varve series scaled by the sample standard deviation of the second half. Plot the
-two subseries x1 and x2 in two panels using the plotting function mfrow=c(2,1).
+
+### (b) Plot the ACF of sunspotz. Do you think it is appropriate to model this using a
+stationary ARMA process ? 
 
 ```{r}
-x1 <- left.half
-x2 <- right.half
-x1.scaled<- scale(left.half,center = FALSE,scale = sqrt(var.left))
-x2.scaled<- scale(right.half,center = FALSE, scale = sqrt(var.right))
-
-par(mfrow=c(2,1), mar=c(3,2,1,0)+.5, mgp=c(1.6,.6,0))
-plot(ts(x1.scaled),ylab="x1")
-plot(ts(x2.scaled),ylab="x2")
+acf2(df)
 
 ```
 
-## (c) Now combine the two scaled series $x1$ and $x2$, and call it $xt$. Plot the ACF of the $xt$ series and comment on its (non-)stationarity properties! 
+We note the presense of strong long range correlation.  At first glance we would be hesitant to model this with a stationary ARMA process.  We'd possibly perform a unit root test and consider modelling this data with an ARIMA process. For fun, we do some modelling in the temporal doamin. 
+
+
+```{r ,results='hide',fig.keep='all'}
+invisible(model <-sarima(df,3,1,2))
+model$ttable
+```
+
+We note some outlier in the the standardised residuals, heavy tails in the QQ plot, and that the individual Ljung-Box pp-vaules are all close to being significant.  We also note a presense of a lag 11,12 acf component in the rsiduals.  This is consistent with our intial observation that the data had short term and long term cyclic trends. 
+
+For more fun let's calculate the Ljung-Box-Pierce Q-statistic to check for systemic autocorrelation in the residuals. 
 
 ```{r}
 
-union.x <- ts(union(x1.scaled,x2.scaled))
-plot(union.x)
-acf(union.x)
+n <- length(df)
+H <- 20
+r <-model$fit$residuals[1:H]
+acf.residuals <- acf(r,H, main="ACF of residuals")
+sum.denominator <- n-seq(H, 1, by = -1)   
+r.s <-  acf.residuals$acf^2 / sum.denominator
+Q <- n*(n+2) *sum(r.s)
+Q
 ```
 
-Since the acf is slowly decaying - we have evidence of non-stationarity. We can't say for sure though, but we should definitely investigate for trend.  If we were taking the follow up course - we'd be curious about unit root test - I believe these are for detecting long range correlations in time series.
+We see based on the Q-statistic that we have significant correlation structure remaining in the residuals. 
 
 
-## (d) Consider the differenced time series $xdiff$ obtained from $xt$. Show that an $MA(1)$ model is appropriate for $xdiff$. 
+### (c) Plot the periodogram of the sunspotz series using the spectrum command. 
+
+We used the definition of the periodogram and the fft to calculate $I(\omega_j) = | d(\omega_j) |^2$ taking into account that we had to normalize the fft result, take out the DC component, and only use half of the fft.  We also plotted with the spec.pgram 
 
 ```{r}
-diff.union.x <- ts(diff(union.x))
-plot(diff.union.x, main="first difference")
-acf(diff.union.x, 20, main="first difference")
+df.periodogram <- Mod(fft(df-mean(df)))^2/length(df)   
+df.half <-ts( df.periodogram[1:length(df)/2])
+plot(df.half, main="Periodogram from fft")
+
+df.periodogram.spec <- spec.pgram(df,taper = 0,log = "no",main="Periodogram from spec")
 ```
+What we have plotted is the raw periodogram.  The raw periodogram is not a cosnistent estimator for the spectral density.  We could optinally use a smoothing kernel in the spec.pgram function to obtain a consistent estimate.
 
+### (d) Find the maximum of the periodogram values and the frequency at which the
+maximum occurs. 
 
-We see in autocorrelation plot of the differenced data with a 95% confidence bands that the autocorrelation at lag 1 is significant.  Based on this a MA(1) model is suggested.  If we wanted to we could investigate the PACF to look for an AR component.  
+We're interested in the max and the other peaks to try and understant the frequency components in the signal.  Here we extract the max.  The spec.pgram method returns a spectrum object with the data in ```freq``` , ```spec``` lists.  
 
-There are two other significant ACF values at lag 9 and 10. They are of differing sign, and they are not that far above the $\alpha=0.05$ line so we claim there is no need to include them in our modelling process at this point. 
-
-Now we run a Box-Ljung test to see if we can fit a MA model to the data. 
 
 ```{r}
-union.x.ma1 <-arima(x =union.x, order = c(p = 0, d =
-0, q = 1))
-Box.test(residuals(union.x.ma1), lag = 6, type ="Ljung")
+max.spec.loc <- which.max(df.periodogram.spec$spec)
+max.spec <- df.periodogram.spec$spec[max.spec.loc]
+max.spec.freq <- df.periodogram.spec$freq[max.spec.loc]
+
+pander(data.frame(max.spec.freq = max.spec.freq,max.spec=max.spec))
 ```
-The Box-Ljung test shows that the lag autocorrelations among the residuals hence the $MA(1)$ model provides a good fit to the data. 
+We tried to fix up some code to fnd locations of the other peaks in the periodogram.  The idea is to use overlapping intervals to fund the local peaks via a spline maximization. It doesn't work yet :(
 
-## (e) The model for $X_t = xdiff$ can be written as 
-$$X_t = \mu + W_t + \theta_1 W_{t-1}$$ 
-Where ${W_t} \sim N(-,\sigma_W)$.  Find an estimate of $\mu$.
-
-
-Since $E[W_t] = 0 \;\;\forall t$ We have that $E[X_t]=\mu$ and it stands to reason that $\hat{\mu}=\bar{x_t}$ is a good estimate of $\mu$
+We did try to smooth the spectrum with a Danniel Kernel first. We'll keep that plot for reference. Note the 2 periodic componets are highlighted better in the Danniel smoothed spectrum.
 
 ```{r}
-pander(data.frame(mean.xdiff=mean(diff.union.x)),capiton = "Estimate of constant in MA model")
+k = kernel("daniell", 4)
+df.periodogram.spec.danniel <- spec.pgram(df,k,taper = 0,log = "no",main="Periodogram from spec with Danniel kernel smoothing.")
+# f <- function(x, q, d) spline(q, d, xout = x)$y
+# x <- df.periodogram.spec.danniel$freq
+# y <- df.periodogram.spec.danniel$spec
+# nb <- 20 # choose number of intervals
+# iv <- embed(seq(floor(min(x)), ceiling(max(x)), len = nb), 2)[,c(2,1)]
+# # make overlapping intervals to avoid problems if the peak is close to 
+# # the ends of the intervals (two modes could be found in each interval)
+# iv[-1,1] <- iv[-nrow(iv),2] - 2
+# # The function "f" is maximized at each of these intervals
+# iv
+# # the solution is a local maximum
+# gr.thr <- 0.01
+# hes.thr <- 0.03i
+# 
+# require("numDeriv")
+# vals <- matrix(nrow = nrow(iv), ncol = 3)
+# grd <- hes <- rep(NA, nrow(vals))
+# for (j in seq(1, nrow(iv)))
+# {
+#   opt <- optimize(f = f, maximum = TRUE, interval = iv[j,], q = x, d = y)
+#   vals[j,1] <- opt$max
+#   vals[j,3] <- exp(opt$obj)
+#   grd[j] <- grad(func = f, x = vals[j,1], q = x, d = y)
+#   hes[j] <- hessian(func = f, x = vals[j,1], q = x, d = y)
+#   if (abs(grd[j]) < gr.thr && abs(hes[j]) > hes.thr)
+#     vals[j,2] <- 1
+# }
+# # bin the peaks to avoid similar local maxima
+# vals[,1] <- round(vals[,1], 2)
+# if (anyNA(vals[,2])) {
+#   peaks <- unique(vals[-which(is.na(vals[,2])),1])
+# } else 
+#   peaks <- unique(vals[,1])
+# 
+# plot(df.periodogram.spec$freq, df.periodogram.spec$spec, log = "y", type = "l")
+# abline(v = peaks, lty = 2)
 ```
 
-It's interesting to look at the trend in the original series. We can fit a linear model $\mu_t = \beta_0 + \beta_1 t$ and see the trend in the original series.  I'd be curious to understand how differencing compares to subtracting the linear trend in terms of model fit - likewise for the scaling we did to remove the heteroskedasticity. We'd consider a log or square root transform as an alternative for the left right scaling.   
+
+
+### (e) Find an AR-based estimate of the spectral density of sunspotz using the com-
+mand spec.ar. 
+
+First we note the caution from the documentaiton of spec.ar 
+*Warning Some authors, for example Thomson (1990), warn strongly that AR spectra can be misleading.* 
+We'll keep this in mind as we proceed. 
 
 ```{r}
-fit = lm(union.x~time(union.x), na.action=NULL) 
-summary(fit)
-mean(union.x)
-plot(union.x)
-lines(fitted(fit), col='red')
+df.spectrum.ar <- spec.ar(df,log="no")#, log="no", ylim=c(0,.5), plot = TRUE)
 ```
 
+This looks similar to the Danniel smmothed spectrum only smoother. The second peak seems less distinct in this spectra. 
 
-## (f) Write down the final model for the varve-series based on this analysis.
 
+### (f) Find the maximum of the estimated spectral density and the frequency at which
+the maximum occurs. 
 
-We can use the autocovariance function
-
-$$\gamma(h) = 
-\begin{cases}
-\sigma_w^2 (1+\theta^2) & h=0 \\
--\theta \;\sigma_w^2 & h=1 \\
-0 & h>1
-\end{cases}
-$$
-to match up with the sample autocovariance and get estimates for $\theta$ and $\sigma_w^2$
 
 ```{r}
-autocov <- acf(diff.union.x, type = "covariance")
+max.spec.loc <- which.max(df.spectrum.ar$spec)
+max.spec <- df.spectrum.ar$spec[max.spec.loc]
+max.spec.freq <- df.spectrum.ar$freq[max.spec.loc]
 
+pander(data.frame(max.spec.freq = max.spec.freq,max.spec=max.spec))
 ```
-We'll extract the values for $\gamma(0)$ and $\gamma(1)$ to get 
 
-$\sigma_w^2 (1+\theta^2)=$ 
+### (g) Find the two estimates of the period of the most prominent periodic component
+of the sunspotz series using your answers from parts (d) and (f). What does it
+say about the Sunspot cycle? 
+
+I'm not sure what we're being asked in this part.  The period is given by $\frac{1}{\omega}$ so the max of the ar estimated spectral density has a period of $\frac{1}{0.09619}= $ ```r 1/0.09619```
+
+The max of the spectrum given by the fft is $\frac{1}{0.09167}= $ ```r 1/0.09167```   So the period is likely between 10-11 years, but it's not clear right now how we would statistically estimate this. 
+
+We can look at the frequency of the max of the Danniel smoothed spectrum for additional insight. 
+```{r}
+max.spec.loc <- which.max(df.periodogram.spec.danniel$spec)
+max.spec <- df.periodogram.spec.danniel$spec[max.spec.loc]
+max.spec.freq <- df.periodogram.spec.danniel$freq[max.spec.loc]
+pander(data.frame(max.spec.freq = max.spec.freq,max.spec=max.spec))
+```
+
+We learned how to parametrically and non-parametrically estimate the spectrum $f(\omega_0)$ at a location $\omega_0$.  Maybe we'll return to this and perform those estimates. 
+
+
+##2 
+Suppose that $\{S_t\}$ and $\{N_t\}$ are zero mean SOS and independent time series with
+ACvFs $\gamma_1()$ , $\gamma_2$ and and spectral densities $f_1(\omega)$ and $f_2(\omega)$, respectively. Let
+
+$$X_t = S_t + A S_{t-D} + N_t$$
+
+where $A \in (0,\infty)$ is a constant and $D > 0$ is an integer.
+
+### (a) Find the ACvF of $\{X_t\}$.
+
+### (b) Using part (a) or otherwise, show that the spectral density of fXtg is given by
+
+$$f_x(\omega) = [1 + A^2 + 2A cos(2 \omegaD)]f_1(\omega) + f2(\omega)$$
+
+
+
+## 3. Consider the unemployment time series unemp given in the package astsa.
+
+### (a) Plot the unemp series and its ACF upto lag 50. 
 
 ```{r}
-autocov[0]
+rm(list = ls())
+library(astsa)
+data(unemp, package="astsa")
+df <- unemp
+plot(ts(df))
+acf2(df,50)
 ```
 
-and 
 
-$-\theta \;\sigma_w^2=$  
+### (b) Fit a Seasonal ARIMA model of order $(0 1 2) \times (0,1,1)_{12}$ and present the R output.
 
-```{r} 
-autocov[1]
+```{r ,results='hide',fig.keep='all'}
+invisible(model <-sarima(df,0,1,2,0,1,1,12))
+model$ttable
 ```
 
-Solving these 
+For lag 1 the Ljung-Box statistic shows significant correlation in the residuals.  
+
+Let's calculate the Ljung-Box-Pierce Q-statistic to check for systemic autocorrelation in the residuals.  We'll extract the residuals and do the calculation by hand - there's and R function for this ```Box-Test```  that we've experimented with.  we'll revisit this.
 
 ```{r}
-a=autocov$acf[2]
-b=autocov$acf[1]
-c=autocov$acf[2]
-first.root <- ((-b) + sqrt((b^2) - 4*a*c)) / (2*a)
-second.root <- ((-b) - sqrt((b^2) - 4*a*c)) / (2*a)
-
-pander(data.frame(first.root=first.root,second.root=second.root), caption="roots")
-
-pander(data.frame(sima.hat=(-autocov$acf[2]/first.root)),caption="estimated variance of W_t from our data from first root")
-
-pander(data.frame(sima.hat=(-autocov$acf[2]/second.root)),caption="estimated variance of W_t from our data from second root")
+n <- length(df)
+H <- 20
+r <-model$fit$residuals[1:H]
+acf.residuals <- acf(r,H, main="ACF of residuals")
+sum.denominator <- n-seq(H, 1, by = -1)   
+r.s <-  acf.residuals$acf^2 / sum.denominator
+Q <- n*(n+2) *sum(r.s)
+Q
 ```
 
-Now we have 2 choices of root above which give 2 equivalent models with different noise processes.  We choose $\hat{theta}=0.5107369$ so the time series will be invertible. Note this value of $\theta$ gives us $\sigma_w^2 = \frac{-\gamma(1)}{\theta}=.888$
 
+### (c) Consider the Ljung-Box statistic p-value plot and the ACF of the residuals. What
+do these indicate about inadequacy of the fitted model ? 
 
-Now that we have $\hat{\theta}=0.5107369$ and $\hat{\delta}= -0.003011$ we can back out our scaling and diff to get an expression for the original varve time series model.
+Thhe Ljung-Box statistic shows nearly significant and autocorrelation in the residuals at some lags.  We would look into increasing the AR order for our model to reduce this. 
 
-A log transform for the scaling would be more elegant to look at but here we go
+### (d) Refine the SARIMA model based on your answer to the last part and present the
+R output for the new SARIMA model. Indiacte how the new model improves on
+the model in part (b). 
 
-Let 
+```{r}
+invisible(model <-sarima(df,2,1,2,1,1,1,12))
+model$ttable
+```
 
-$$f(y_t)= 
-\begin{cases}
-y_t \frac{1}{\hat{\sigma_L}} &  t< \frac{length}{2}\\
-\\
-y_t \frac{1}{\hat{\sigma_L}} &  t< \frac{length}{2}\\
-\end{cases}
-$$
-Where we got the scaling from the left and right sample variances.  We denote the inverse scaling by $f^{-1}$  
+In looking at my calculation of the Ljung-Box-Pierce Q-statistic I'm suspicious of my code based on the plot above. REVISIT
 
-
-$$f^{-1}(z_y)= 
-\begin{cases}
-z_t \hat{\sigma_L} & t< \frac{length}{2}\\
-\\
-z_t \hat{\sigma_L} &  t< \frac{length}{2}\\
-\end{cases}
-$$
-
-Or model for the diff is 
-
-$$xdiff_t = f(y_t)- f(y_{t-1}) = \mu + W_t + \theta_1 W_{t-1}$$ 
-
-The final model is then
-
-$$y_t = y_{t-1} + f^{-1} ( \mu + W_t + \theta_1 W_{t-1}) $$
-
-# 3 ARIMA Question
-
-Suppose that $X_t$ is an $ARMA(p,q)$ process:
-$$X_t = .5 X_{t-1} + W_t -0.7 W_{t-1} + 0.1 W_{t-2}$$
-where $W_t$ are IID $N(0,1)$.
-
-## (a) Find $p$ and $q$. (Be sure to check for model redundancy.)
-
-From our structural representation via the backshift operator $\phi(B)X_t = \theta(B) W_t$ we get the polynomials
-
-$\phi(z)=(1-.5z)$ and $\theta(z)= (1 -0.7 z + 0.1 z^2)$ checking for common roots
-
-We see that $\theta(z)= (1-0.5 z)(1-0.2 z)$ so there is a common factor of $(1-0.5z)$
-
-This means our model is a ARMA(0,2)=MA(1) rather than a ARMA(2,2).  
-
-## (b) Show that $X_t$ is invertible.
-
-Since the roots of $\theta(z)$ are outside the unit circle, the ARIMA process is invertible. 
-
-## (c) Find the ACF of ${X_t}$ explicitly.
-
-$X_t = W_t -0.2 W_{t-1}$ 
-
-We have $E(X_t) =0$ and putting or model into $cov(x_{t+h},x_t)$ and collecting terms we have that
-
-$$\gamma(h)= 
-\begin{cases}
-\sigma_w^2 \; (1+\theta^2)&  h=0\\
-\sigma_w^2 \; \theta &  h=1\\
-0 & h>1
-\end{cases}
-$$
-$$\gamma(h)= 
-\begin{cases}
-\sigma_w^2 \; 1.04 &  h=0\\
-\sigma_w^2 \; 0.2 &  h=1\\
-0 & h>1
-\end{cases}
-$$
-From which we get
-
-$$\rho(h)= 
-\begin{cases}
-1 &  h=0\\
- 0.1923077 &  h=1\\
-0 & h>1
-\end{cases}
-$$
-
-
-Originally I worked through the problem as if there were no shared term.  The recipe below is what I put together given that the roots for $\phi(z)$ and $\theta(z)$ lie outside the unit circle. 
-
-Since the root of $\phi(z)$ lies outside the unit circle, the process is causal and we can write the time series as a one sided linear process $x_t = \psi(B) w_t$ from which we have $E[x_t]=0$.  So $\gamma(h) = cov(x_{t+h},x_t) = \sigma_w \sum\limits_{j=0}^{\infty} \psi_{j+h}\psi_j$ 
-
-For a causal ARIMA model we have that the coefficients must satisfy 
-
-$$\phi(z)\psi(x)=\theta(z)$$ and we can preform a coefficient matching to extract the values of $\psi_j$ to use in $\gamma(h)$
-
-$$(\psi_0 + \psi_1 z + \psi_2 z^2 ) (\phi_0 +\phi_1 z ) = (\theta_0+\theta_1 z +\theta_2 z^2)$$
-Putting this in the expression for $\gamma(h)$ we have that 
-
-$$\gamma(h)= 
-\begin{cases}
-\sigma_w^2 \; (\psi_0^2 + \psi_1^2 + \psi_2^2) &  h=0\\
-\sigma_w^2 \; (\psi_0 \psi_1 + \psi_1 \psi_2) &  h=1\\
-\sigma_w^2 \; (\psi_0 \psi_2) &  h=2\\
-0 & h>2
-\end{cases}
-$$
-and 
-
-$$\rho(h)= 
-\begin{cases}
-1 &  h=0\\
-\\
-\frac{(\psi_0 \psi_1 + \psi_1 \psi_2)}{(\psi_0^2 + \psi_1^2 + \psi_2^2)} &  h=1\\
-\\
-\frac{(\psi_0 \psi_2)}{(\psi_0^2 + \psi_1^2 + \psi_2^2)} &  h=2\\
-0 & h>2
-\end{cases}
-$$
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```{r}
+n <- length(df)
+H <- 20
+r <-model$fit$residuals[1:H]
+acf.residuals <- acf(r,H, main="ACF of residuals")
+sum.denominator <- n-seq(H, 1, by = -1)   
+r.s <-  acf.residuals$acf^2 / sum.denominator
+Q <- n*(n+2) *sum(r.s)
+Q
+```
+### (e) Use the fitted model in part (d) to forecast the next 12-months.
 
 
 
