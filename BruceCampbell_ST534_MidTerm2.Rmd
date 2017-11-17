@@ -41,7 +41,7 @@ df <- sunspotz
 plot(ts(df))
 ```
 
-From the doscumentaion sunspotz. is the *biannual smoothed (12-month moving average) number of sunspots from June 1749 to December 1978; n = 459*.  The format is ```Time Series: Start = c(1749, 1) End = c(1978, 1) Frequency = 2```  There appear to be two or more fundamental frequencies in the series.  We note the sppearance of short term and long term cyclical behavior. In regards to modelling with this data we would want to take into consideration that the period of observations is shore realtive to the eveolution of the dynamical system generating the data, and that the technology for making observations may have evolved over the period of data collecation. 
+From the documentation sunspotz. is the *biannual smoothed (12-month moving average) number of sunspots from June 1749 to December 1978; n = 459*.  The format is ```Time Series: Start = c(1749, 1) End = c(1978, 1) Frequency = 2```  There appear to be two or more fundamental frequencies in the series.  We note the appearance of short term and long term cyclical behavior. In regards to modelling with this data we would want to take into consideration that the period of observations is shore relative to the evolution of the dynamical system generating the data, and that the technology for making observations may have evolved over the period of data collection. 
 
 
 ### (b) Plot the ACF of sunspotz. Do you think it is appropriate to model this using a stationary ARMA process ? 
@@ -51,7 +51,7 @@ From the doscumentaion sunspotz. is the *biannual smoothed (12-month moving aver
 invisible(acf2(df))
 ```
 
-We note the presense of strong long range correlation.  At first glance we would be hesitant to model this with a stationary ARMA process.  We'd possibly perform a unit root test and consider modelling this data with an ARIMA process. For fun, we do some modelling in the temporal doamin. 
+We note the presence of strong long range correlation.  At first glance we would be hesitant to model this with a stationary ARMA process.  We'd possibly perform a unit root test and consider modelling this data with an ARIMA process. For fun, we do some modelling in the temporal domain. 
 
 
 ```{r ,results='hide',fig.keep='all'}
@@ -59,7 +59,7 @@ invisible(model <-sarima(df,3,1,2))
 model$ttable
 ```
 
-We note some outlier in the the standardised residuals, heavy tails in the QQ plot, and that the individual Ljung-Box pp-vaules are all close to being significant.  We also note a presense of a lag 11,12 acf component in the rsiduals.  This is consistent with our intial observation that the data had short term and long term cyclic trends. 
+We note some outlier in the the standardized residuals, heavy tails in the QQ plot, and that the individual Ljung-Box p-values are all close to being significant.  We also note a presence of a lag 11,12 acf component in the residuals.  This is consistent with our initial observation that the data had short term and long term cyclic trends. 
 
 For more fun let's calculate the Ljung-Box-Pierce Q-statistic to check for systemic autocorrelation in the residuals. 
 
@@ -75,7 +75,7 @@ Q <- n*(n+2) *sum(r.s)
 Q
 ```
 
-We see based on the Q-statistic that we have significant correlation structure remaining in the residuals. 
+We see based on the Q-statistic that we have significant correlation structure remaining in the residuals. See comments below in section 3.  We're not sure of this code. 
 
 
 ### (c) Plot the periodogram of the sunspotz series using the spectrum command. 
@@ -89,12 +89,12 @@ plot(df.half, main="Periodogram from fft")
 
 df.periodogram.spec <- spec.pgram(df,taper = 0,log = "no",main="Periodogram from spec")
 ```
-What we have plotted is the raw periodogram.  The raw periodogram is not a cosnistent estimator for the spectral density.  We could optinally use a smoothing kernel in the spec.pgram function to obtain a consistent estimate.
+What we have plotted is the raw periodogram.  The raw periodogram is not a consistent estimator for the spectral density.  We could optionally use a smoothing kernel in the spec.pgram function to obtain a consistent estimate.
 
 ### (d) Find the maximum of the periodogram values and the frequency at which the
 maximum occurs. 
 
-We're interested in the max and the other peaks to try and understant the frequency components in the signal.  Here we extract the max.  The spec.pgram method returns a spectrum object with the data in ```freq``` , ```spec``` lists.  
+We're interested in the max and the other peaks to try and understand the frequency components in the signal.  Here we extract the max.  The spec.pgram method returns a spectrum object with the data in ```freq``` , ```spec``` lists.  
 
 
 ```{r}
@@ -104,9 +104,9 @@ max.spec.freq <- df.periodogram.spec$freq[max.spec.loc]
 
 pander(data.frame(max.spec.freq = max.spec.freq,max.spec=max.spec))
 ```
-We tried to fix up some code to fnd locations of the other peaks in the periodogram.  The idea is to use overlapping intervals to fund the local peaks via a spline maximization. It doesn't work yet :(
+We tried to fix up some code to find locations of the other peaks in the periodogram.  The idea is to use overlapping intervals to find the local peaks via a spline maximization. It doesn't work yet :(
 
-We did try to smooth the spectrum with a Danniel Kernel first. We'll keep that plot for reference. Note the 2 periodic componets are highlighted better in the Danniel smoothed spectrum.
+We did try to smooth the spectrum with a Danniel Kernel first. We'll keep that plot for reference. Note the 2 periodic components are highlighted better in the Danniel smoothed spectrum.
 
 ```{r}
 k = kernel("daniell", 4)
@@ -153,7 +153,7 @@ df.periodogram.spec.danniel <- spec.pgram(df,k,taper = 0,log = "no",main="Period
 
 ### (e) Find an AR-based estimate of the spectral density of sunspotz using the command spec.ar. 
 
-First we note the caution from the documentaiton of spec.ar 
+First we note the caution from the documentation of spec.ar 
 *Warning Some authors, for example Thomson (1990), warn strongly that AR spectra can be misleading.* 
 We'll keep this in mind as we proceed. 
 
@@ -161,7 +161,7 @@ We'll keep this in mind as we proceed.
 df.spectrum.ar <- spec.ar(df,log="no")#, log="no", ylim=c(0,.5), plot = TRUE)
 ```
 
-This looks similar to the Danniel smmothed spectrum only smoother. The second peak seems less distinct in this spectra. 
+This looks similar to the Danniel smoothed spectrum only smoother. The second peak seems less distinct in this spectra. 
 
 
 ### (f) Find the maximum of the estimated spectral density and the frequency at which
@@ -192,10 +192,27 @@ max.spec.freq <- df.periodogram.spec.danniel$freq[max.spec.loc]
 pander(data.frame(max.spec.freq = max.spec.freq,max.spec=max.spec))
 ```
 
-We learned how to parametrically and non-parametrically estimate the spectrum $f(\omega_0)$ at a location $\omega_0$.  Maybe we'll return to this and perform those estimates. 
+We learned how to parametrically and non-parametrically estimate the spectrum $f(\omega_0)$ at a location $\omega_0$ based on a window about $\omega_0$.  For fun let's calculate the 95%CI for $f(\omega)$ at the max of the Danniel smoothed series. 
 
+```{r}
+df.danniel.ave = mvspec(df, kernel('daniell',4), log='no')
+abline(v = c(.1), lty=2)
+max.spec.loc <- which.max(df.danniel.ave$spec)
+df.danniel.ave$bandwidth     
+degree.freedom  = df.danniel.ave$df       
+U   = qchisq(.025, degree.freedom) 
+L   = qchisq(.975, degree.freedom) 
+df.danniel.ave$spec[max.spec.loc]       
+# intervals
+lower.ci <- degree.freedom*df.danniel.ave$spec[max.spec.loc]/L  
+upper.ci <- degree.freedom*df.danniel.ave$spec[max.spec.loc]/U
 
-##2 
+pander(data.frame(lower.ci=lower.ci, upper.ci=upper.ci), caption="95 percent CI for spectrum at max for Danniel smmothed. L=9")
+```
+
+\newpage
+
+## 2 The spectrum of a linear combinatino of SOS processes  
 
 Suppose that $\{S_t\}$ and $\{N_t\}$ are zero mean SOS and independent time series with
 ACvFs $\gamma_1()$ , $\gamma_2$ and and spectral densities $f_1(\omega)$ and $f_2(\omega)$, respectively. Let
@@ -207,7 +224,7 @@ where $A \in (0,\infty)$ is a constant and $D > 0$ is an integer.
 ### (a) Find the ACvF of $\{X_t\}$.
 
 $$f_x(\omega) = [1 + A^2 + 2A\;cos(2 \omega D)]f_1(\omega) + f2(\omega)$$
-Without loss of generality we can assume that $E[S_t]=0$ and $E[N_t]=0$ otherwise we'll subtract $\mu_S$ and $\mu_N$ from $S_t$ and $N_t$ and $\mu_S+ A \mu_S + \mu_N$ from $X_t$.  Now that we've mean corrected, we can write all of the ACvF functions in the redcued form.
+Without loss of generality we can assume that $E[S_t]=0$ and $E[N_t]=0$ otherwise we'll subtract $\mu_S$ and $\mu_N$ from $S_t$ and $N_t$ and $\mu_S+ A \mu_S + \mu_N$ from $X_t$.  Now that we've mean corrected, we can write all of the ACvF functions in the reduced form.
 
 $$\gamma_X = E[X_{t+h}X_t] = E[( S_{t+h} + A S_{t+h-D} + N_{t+h})( S_t + A S_{t-D} + N_t)]$$
 Since the processes are independent the cross covariance terms drop out and we're left with 
@@ -220,7 +237,7 @@ Now we write this in terms of $\gamma_S$ and $\gamma_N$
 $$\gamma_X(h) = \gamma_S(h) + A^2 \;\gamma_S(h) +\gamma_N(h) + A\; \gamma_S(h+D) + A\; \gamma_S(h-D)$$
 ### (b) Using part (a) or otherwise, show that the spectral density of fXtg is given by
 
-Looking good so far, we can see where it's going.  But we need to make an assumption regarding the summability of $\gamma_S$ and $\gamma_N$.  If we have absolute summability of the autocovariance functions we'll be able to express the spectral densities in terms of the values of $\gamma(h)$.  We'll make this assumption and move on.  The plan is that we'll express $f_X(\omega)$ in terms of the denities of $S$ and $N$ and invoke the uniqueness of the Fourier transform.
+Looking good so far, we can see where it's going.  But we need to make an assumption regarding the summability of $\gamma_S$ and $\gamma_N$.  If we have absolute summability of the autocovariance functions we'll be able to express the spectral densities in terms of the values of $\gamma(h)$.  We'll make this assumption and move on.  The plan is that we'll express $f_X(\omega)$ in terms of the densities of $S$ and $N$ and invoke the uniqueness of the Fourier transform.
 
 
 $$f_X(\omega) = \sum\limits_{h=-\infty}^{h=\infty}\gamma_X(h)e^{-2 \pi i \omega h} =\sum\limits_{h=-\infty}^{h=\infty} [\gamma_S(h) + A^2 \;\gamma_S(h) +\gamma_N(h) + A\; \gamma_S(h+D) + A\; \gamma_S(h-D)\ ] \;e^{-2 \pi i \omega h}$$
@@ -234,11 +251,13 @@ We get a similar result for the term with $h-D$ except for a sign change.  Subst
 
 $$f_X(\omega) = f_S(\omega) +A^2 f_S(\omega)  + f_N(\omega) + A \;e^{2 \pi i \omega D} f_S(\omega) + A \;e^{-2 \pi i \omega D} f_S(\omega)$$
 
-Colecting terms and using a trig identity, we have that.
+Collecting terms and using a trig identity, we have that.
 
 
 $$f_X(\omega) = [1 +A^2 +  A \; cos(2 \pi i \omega D) ] \; f_S(\omega) \; + f_N(\omega)$$
-Uniqueness of the Fourier transform assures us that the expression on the RHS is indeed the spectras density of $X$.
+Uniqueness of the Fourier transform assures us that the expression on the RHS is indeed the spectral density of $X$.
+
+\newpage
 
 ## 3. Consider the unemployment time series unemp given in the package astsa.
 
@@ -280,10 +299,10 @@ Q
 ### (c) Consider the Ljung-Box statistic p-value plot and the ACF of the residuals. What
 do these indicate about inadequacy of the fitted model ? 
 
-Thhe Ljung-Box statistic shows nearly significant and autocorrelation in the residuals at some lags.  We would look into increasing the AR order for our model to reduce this. 
+The Ljung-Box statistic shows nearly significant and autocorrelation in the residuals at some lags.  We would look into increasing the AR order for our model to reduce this. 
 
 ### (d) Refine the SARIMA model based on your answer to the last part and present the
-R output for the new SARIMA model. Indiacte how the new model improves on
+R output for the new SARIMA model. Indicate how the new model improves on
 the model in part (b). 
 
 ```{r ,results='hide',fig.keep='all'}
@@ -291,7 +310,6 @@ invisible(model <-sarima(df,2,1,2,1,1,1,12))
 model$ttable
 ```
 
-In looking at my calculation of the Ljung-Box-Pierce Q-statistic I'm suspicious of my code based on the plot above. REVISIT
 
 ```{r}
 n <- length(df)
@@ -303,7 +321,22 @@ r.s <-  acf.residuals$acf^2 / sum.denominator
 Q <- n*(n+2) *sum(r.s)
 Q
 ```
+
+
+In looking at my calculation of the Ljung-Box-Pierce Q-statistic I'm suspicious of my code based on the plot above. REVISIT
+
+
 ### (e) Use the fitted model in part (d) to forecast the next 12-months.
 
+```{r}
+fore = predict(model$fit, n.ahead=12,interval="prediction") 
+ts.plot(df, fore$pred, col=1:2, ylab="time series with predicted") 
+lines(fore$pred, pch='*', col=2) 
 
+last <- window(df,start =1970)
+ts.plot(last, fore$pred, col=1:2, ylab="tail of time series with predicted") 
+
+
+fore$pred
+```
 
