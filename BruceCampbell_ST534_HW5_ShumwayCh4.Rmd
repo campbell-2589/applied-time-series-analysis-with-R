@@ -28,3 +28,80 @@ library(ggplot2)
 library(ggplot2)
 library(GGally)
 ```
+
+
+## 4.13 chiken price data.
+Analyze the chicken price data (chicken) using a nonparametric spectral estimation
+procedure. Aside from the obvious annual cycle discovered in Example 2.5,
+what other interesting cycles are revealed?
+
+
+## 4.16 Cepstral Analysis.
+The periodic behavior of a time series induced by echoes can also be observed in the spectrum of the series; this fact can be
+seen from the results stated in Problem 4.7. Using the notation of that problem,
+suppose we observe $x_t = s_t + A s_{t-D} + n_t$, which implies the spectra satisfy
+$f_x (\omega) = [1 + A2 + 2A cos(2\pi \; \omega \; D)] f_s(\omega) + f_n(\omega)$. If the noise is negligible
+$( fn(\omega) \approx 0$) then $log f_x (\omega)$ is approximately the sum of a periodic component,
+$log[1 + A2 + 2A cos(2 \pi \; \omega \; D)]$, and $log f_s (\omega)$. Bogart et al. [27] proposed treating the
+detrended log spectrum as a pseudo time series and calculating its spectrum, or cepstrum,
+which should show a peak at a quefrency corresponding to 1/D. The cepstrum
+can be plotted as a function of quefrency, from which the delay D can be estimated.
+For the speech series presented in Example 1.3, estimate the pitch period using
+cepstral analysis as follows. The data are in speech.
+
+### (a) 
+Calculate and display the log-periodogram of the data. Is the periodogram periodic,as predicted?
+
+###(b) 
+Perform a cepstral (spectral) analysis on the detrended logged periodogram, and
+use the results to estimate the delay D. How does your answer compare with the
+analysis of Example 1.27, which was based on the ACF?
+
+
+4.18 Consider two time series
+$x_t = w_t -w_{t-1}$ , $y_t = \frac{1}{2} (w_t + w_{t-1})$,
+formed from the white noise series $w_t$ with variance $\sigma^2 = 1$.
+
+### (a) 
+Are $x_t$ and $y_t$ jointly stationary? Recall the cross-covariance function must also
+be a function only of the lag $h$ and cannot depend on time.
+
+### (b) 
+Compute the spectra $f_y(\omega)$ and $f_x(\omega)$, and comment on the difference between
+the two results.
+
+### (c) 
+Suppose sample spectral estimators $\bar{f}_y(.10)$ are computed for the series using $L = 3$. 
+Find a and b such that
+
+$$ P \{  a \leq  \bar{f_y}(0.10)  \leq b  \}=0.90 $$  
+This expression gives two points that will contain 90% of the sample spectral
+values. Put 5% of the area in each tail.
+
+
+## 4.27 Production vs Unemployment Analysis 
+
+Consider the bivariate time series records containing monthly U.S. production
+(prod) as measured by the Federal Reserve Board Production Index and the monthly
+unemployment series (unemp).
+
+### (a)
+Compute the spectrum and the log spectrum for each series, and identify statistically
+significant peaks. Explain what might be generating the peaks. Compute
+the coherence, and explain what is meant when a high coherence is observed at a
+particular frequency.
+
+### (b) 
+What would be the effect of applying the filter
+$u_t = x_t - x_{t-1}$ followed by $v_t = ut - u_{t-12}$
+to the series given above? Plot the predicted frequency responses of the simple
+difference filter and of the seasonal difference of the first difference.
+
+### (c) 
+Apply the filters successively to one of the two series and plot the output. Examine
+the output after taking a first difference and comment on whether stationarity is a
+reasonable assumption. Why or why not? Plot after taking the seasonal difference
+of the first difference. What can be noticed about the output that is consistent with
+what you have predicted from the frequency response? Verify by computing the
+spectrum of the output after filtering
+
