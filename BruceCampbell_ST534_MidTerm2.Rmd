@@ -80,14 +80,17 @@ We see based on the Q-statistic that we have significant correlation structure r
 
 ### (c) Plot the periodogram of the sunspotz series using the spectrum command. 
 
-We used the definition of the periodogram and the fft to calculate $I(\omega_j) = | d(\omega_j) |^2$ taking into account that we had to normalize the fft result, take out the DC component, and only use half of the fft.  We also plotted with the spec.pgram 
+We used the definition of the periodogram and the fft to calculate $I(\omega_j) = | d(\omega_j) |^2$ taking into account that we had to normalize the fft result, take out the DC component, and only use half of the fft.  We also plotted with the spec.pgram.  Since the plot axis don't seem to line up with the data extracted - we tried multiple methods to ensure we have the right answer.  Also, it's informative to see how the fft operates in R. 
 
 ```{r}
-df.periodogram <- Mod(fft(df-mean(df)))^2/length(df)   
+df.periodogram <- Mod(fft(df-mean(df)))^2/(2*length(df))   
 df.half <-ts( df.periodogram[1:length(df)/2])
 plot(df.half, main="Periodogram from fft")
 
-df.periodogram.spec <- spec.pgram(df,taper = 0,log = "no",main="Periodogram from spec")
+df.periodogram.spec <- spec.pgram(df,taper = 0,log = "no",main="Periodogram from spec.pgram")
+
+
+df.periodogram.spectrum <- spectrum(df,taper = 0,log = "no",main="Periodogram from spectrum")
 ```
 What we have plotted is the raw periodogram.  The raw periodogram is not a consistent estimator for the spectral density.  We could optionally use a smoothing kernel in the spec.pgram function to obtain a consistent estimate.
 
@@ -97,13 +100,24 @@ maximum occurs.
 We're interested in the max and the other peaks to try and understand the frequency components in the signal.  Here we extract the max.  The spec.pgram method returns a spectrum object with the data in ```freq``` , ```spec``` lists.  
 
 
+
+```{r}
+max.spec.loc <- which.max(df.periodogram.spectrum$spec)
+max.spec <- df.periodogram.spectrum$spec[max.spec.loc]
+max.spec.freq <- df.periodogram.spectrum$freq[max.spec.loc]
+
+pander(data.frame(max.spec.freq = max.spec.freq,max.spec=max.spec), caption="peak from spectrum command")
+```
+
+
 ```{r}
 max.spec.loc <- which.max(df.periodogram.spec$spec)
 max.spec <- df.periodogram.spec$spec[max.spec.loc]
 max.spec.freq <- df.periodogram.spec$freq[max.spec.loc]
 
-pander(data.frame(max.spec.freq = max.spec.freq,max.spec=max.spec))
+pander(data.frame(max.spec.freq = max.spec.freq,max.spec=max.spec), caption="peak from spec.pgram")
 ```
+
 We tried to fix up some code to find locations of the other peaks in the periodogram.  The idea is to use overlapping intervals to find the local peaks via a spline maximization. It doesn't work yet :(
 
 We did try to smooth the spectrum with a Danniel Kernel first. We'll keep that plot for reference. Note the 2 periodic components are highlighted better in the Danniel smoothed spectrum.
@@ -182,9 +196,10 @@ say about the Sunspot cycle?
 
 I'm not sure what we're being asked in this part.  The period is given by $\frac{1}{\omega}$ so the max of the ar estimated spectral density has a period of $\frac{1}{0.09619}$ ```r 1/0.09619```
 
-The max of the spectrum given by the fft is $\frac{1}{0.09167}$ ```r 1/0.09167```   So the period is likely between 10-11 years, but it's not clear right now how we would statistically estimate this. 
+The max of the spectrum given by the fft is $\frac{1}{0.09167}$ ```r 1/0.09167```   So the period is likely between 10-11 years, but it's not clear right now how we would statistically estimate the location of the peak. 
 
 We can look at the frequency of the max of the Danniel smoothed spectrum for additional insight. 
+
 ```{r}
 max.spec.loc <- which.max(df.periodogram.spec.danniel$spec)
 max.spec <- df.periodogram.spec.danniel$spec[max.spec.loc]
@@ -308,6 +323,7 @@ the model in part (b).
 ```{r ,results='hide',fig.keep='all'}
 invisible(model <-sarima(df,2,1,2,1,1,1,12))
 model$ttable
+
 ```
 
 
