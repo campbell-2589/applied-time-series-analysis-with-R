@@ -31,12 +31,48 @@ library(GGally)
 
 
 ## 4.13 chiken price data.
-Analyze the chicken price data (chicken) using a nonparametric spectral estimation
-procedure. Aside from the obvious annual cycle discovered in Example 2.5,
-what other interesting cycles are revealed?
 
+Analyze the chicken price data (chicken) using a nonparametric spectral estimation
+procedure. Aside from the obvious annual cycle discovered in Example 2.5, what other interesting cycles are revealed?
+
+```{r}
+rm(list = ls())
+data(chicken, package="astsa")
+df<-chicken
+plot(df, main ="Poultry (chicken), Whole bird spot price, Georgia docks, US cents per pound")
+```
+
+Let's calculate the periodogram.  There should not be a need to detrend the data since we expect the mean to be represented by the spectrum at $\omega=0$.  
+
+```{r}
+
+df.periodogram.spectrum <- spectrum(df,taper = 0,log = "no",main="Periodogram from spectrum")
+mean(df)
+df.periodogram.spectrum$spec[0]
+```
+
+
+
+```{r}
+max.spec.loc <- which.max(df.periodogram.spectrum$spec)
+max.spec <- df.periodogram.spectrum$spec[max.spec.loc]
+max.spec.freq <- df.periodogram.spectrum$freq[max.spec.loc]
+
+pander(data.frame(max.spec.freq = max.spec.freq,max.spec=max.spec), caption="peak from spectrum command")
+```
+We see a long term cycle around 15 months in periodicity There is another peak in the spectrum around around 1
+
+
+```{r}
+max.spec.loc <- which.max(df.periodogram.spectrum$spec)
+max.spec <- df.periodogram.spectrum$spec[15]
+max.spec.freq <- df.periodogram.spectrum$freq[15]
+
+pander(data.frame(max.spec.freq = max.spec.freq,max.spec=max.spec), caption="minor peak from spectrum command")
+```
 
 ## 4.16 Cepstral Analysis.
+
 The periodic behavior of a time series induced by echoes can also be observed in the spectrum of the series; this fact can be
 seen from the results stated in Problem 4.7. Using the notation of that problem,
 suppose we observe $x_t = s_t + A s_{t-D} + n_t$, which implies the spectra satisfy
@@ -58,7 +94,7 @@ use the results to estimate the delay D. How does your answer compare with the
 analysis of Example 1.27, which was based on the ACF?
 
 
-4.18 Consider two time series
+## 4.18 Consider two time series
 $x_t = w_t -w_{t-1}$ , $y_t = \frac{1}{2} (w_t + w_{t-1})$,
 formed from the white noise series $w_t$ with variance $\sigma^2 = 1$.
 
@@ -66,23 +102,46 @@ formed from the white noise series $w_t$ with variance $\sigma^2 = 1$.
 Are $x_t$ and $y_t$ jointly stationary? Recall the cross-covariance function must also
 be a function only of the lag $h$ and cannot depend on time.
 
+Each series is stationary and the cross covariance function is a function of the lag only so these time sereis are jointly stationary.  We omit the computations here, but the cross covariance is given by 
+
+$$\gamma_{x\;y}(h) = \,
+\begin{cases}
+\frac{1}{2} \sigma^2  \;\;| h=-1\\
+0  \;\;| h=0\\
+-\frac{1}{2} \sigma^2  \;\;| h=1\\
+0  \;\;\;\;\;\;\;\;|h \neq 0,-1,1 
+\end{cases}
+$$
+
 ### (b) 
 Compute the spectra $f_y(\omega)$ and $f_x(\omega)$, and comment on the difference between
 the two results.
+
+Using our epxression for the spectra of an ARMA process and keeping in mind that $\theta_x(z)=1-z$ and $\theta_y(z)=\frac{1}{2}+ \frac{1}{2}z$we have 
+
+$$f_x(\omega) = \sigma^2 |\theta_x(e^{- 2 \pi i \omega}) |^2 =  \sigma^2 |1- e^{- 2 \pi i \omega} |^2= 2 \sigma^2 (1-cos(2 \pi i \omega))  $$
+
+
+$$f_y(\omega) = \sigma^2 |\theta_x(e^{- 2 \pi i \omega}) | =  \frac{\sigma^2}{2} |1 + e^{- 2 \pi i \; \omega} | = \sigma^2 (1+cos(2 \pi i \omega))  $$
+
 
 ### (c) 
 Suppose sample spectral estimators $\bar{f}_y(.10)$ are computed for the series using $L = 3$. 
 Find a and b such that
 
 $$ P \{  a \leq  \bar{f_y}(0.10)  \leq b  \}=0.90 $$  
-This expression gives two points that will contain 90% of the sample spectral
-values. Put 5% of the area in each tail.
+This expression gives two points that will contain 90% of the sample spectral values. Put 5% of the area in each tail.
+
+Appendix C.2 is pretty technical. If you know some analyis we can show that 
+
+$$ 2 L \bar{f}_y(\omega)  \sim \chi^2_{2 L}$$ 
+This at least makes intuitive sense since we're summing squares of normal random variable to estimate the periodogram.  Now the pivot can be used to form a  1-
 
 
 ## 4.27 Production vs Unemployment Analysis 
 
 Consider the bivariate time series records containing monthly U.S. production
-(prod) as measured by the Federal Reserve Board Production Index and the monthly
+(prodn) as measured by the Federal Reserve Board Production Index and the monthly
 unemployment series (unemp).
 
 ### (a)
@@ -91,11 +150,64 @@ significant peaks. Explain what might be generating the peaks. Compute
 the coherence, and explain what is meant when a high coherence is observed at a
 particular frequency.
 
+```{r}
+rm(list = ls())
+library(astsa)
+data(prodn, package="astsa")
+df.prodn<-prodn
+data(unemp,package="astsa")
+df.unemp<- unemp
+plot(df.prodn, main="prodution")
+plot(df.unemp, main = "unemployment")
+spec.prodn <-spectrum(df.prodn, main="spectrum : production")
+spec.unemp <- spectrum(df.unemp, main ="spectrum : unemployment")
+
+spec.prodn <-spectrum(df.prodn, log="yes",main="log spectrum : production")
+spec.unemp <- spectrum(df.unemp, log="yes",main ="log spectrum : unemployment")
+
+```
+Economic cycles such as recession would be the sources of the strong peaks. 
+
+```{r}
+sr=spec.pgram(cbind(df.prodn,df.unemp),kernel("daniell",9),taper=0,plot=FALSE) 
+sr$df 
+f = qf(.999, 2, sr$df-2)
+C = f/(18+f) 
+plot(sr, plot.type = "coh", ci.lty = 2)
+abline(h = C)
+```
+
+The areas of large coherence represent frequency ranges where we may predict one series from another via a linear relationship such as a filter. If one series lags another at a particular frequency the phase of the two components are different. The series with the larger phase can be used to perdict the other.  Keeping mind that we're talking about projecting the series onto the fourier basis function for a perticualr $\omega$ and using that.  
+
+The plot above displays coherence with the line indicating a significance level of $\alpha=0.001$ 
+
+
 ### (b) 
 What would be the effect of applying the filter
-$u_t = x_t - x_{t-1}$ followed by $v_t = ut - u_{t-12}$
+$u_t = x_t - x_{t-1}$ followed by $v_t = u_t - u_{t-12}$
 to the series given above? Plot the predicted frequency responses of the simple
 difference filter and of the seasonal difference of the first difference.
+
+In applying $u_t$ we'd be attenuating the low frequency components in the time series.  Applying $v_t$ would attenuate the components around the sesaonal signal.  If there we're a peak in the spectrum at the $\omega$ corresponding to a period $12$, the filter $v_t$ would supress that.
+We can calculate the frequency response of the filter from 
+
+Using the notation from the book, and that $u_t$ has coefficients $a_0=1, \; a_1=-1$ and all other $a_j=0$ in the linear filter, we have
+
+$$ |A_{x u}(\omega)| = \sum\limits_{j=-\infty}^{j=+\infty} a_j e^{-2 \pi \omega i j}= (1-e^{-2 \pi \omega i })$$
+$$ |A_{x u}(\omega)|^2 = (1-e^{-2 \pi \omega i }) \times  (1-e^{2 \pi \omega i })= 2(1 - cos(2 \pi \omega))$$
+
+Similar arguments for $\nu_t$ give 
+$$ |A_{x \nu}(\omega)|^2 = 2(1 - cos(2 \pi 12 \omega))$$
+The frequency responses are displayed below. 
+
+```{r}
+w = seq(0, .5, by=.01)
+FRdiff = abs(1-exp(2i*pi*w))^2
+FRdiff12 = abs(1-exp(2i*pi*12* w))^2
+plot(w, FRdiff, col=1,type='l', xlab='frequency')
+lines(w,FRdiff12,col=2)
+
+```
 
 ### (c) 
 Apply the filters successively to one of the two series and plot the output. Examine
@@ -105,3 +217,25 @@ of the first difference. What can be noticed about the output that is consistent
 what you have predicted from the frequency response? Verify by computing the
 spectrum of the output after filtering
 
+```{r}
+xu <- filter(df.prodn,filter = c(1,-1))
+plot(xu)
+```
+
+We see the variance is not stable - second order stationarity does not hold for this data.  Now we filter the seasonal component.
+
+
+```{r}
+xuv <- filter(xu,filter = c(1,0,0,0,0,0,0,0,0,0,0,0,-1))
+xuv <- xuv[-(1:12)]
+xuv <- ts(xuv[-(354:360)])
+plot(xuv)
+
+```
+
+We seem to have removed the seasonal component of the series.  Let's look at the spectrum to verify this.
+
+```{r}
+xuv.spec <- spectrum(xuv)
+
+```
