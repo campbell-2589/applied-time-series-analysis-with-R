@@ -45,10 +45,7 @@ plot(df, main ="Poultry (chicken), Whole bird spot price, Georgia docks, US cent
 Let's calculate the periodogram.  There should not be a need to detrend the data since we expect the mean to be represented by the spectrum at $\omega=0$.  
 
 ```{r}
-
 df.periodogram.spectrum <- spectrum(df,taper = 0,log = "no",main="Periodogram from spectrum")
-mean(df)
-df.periodogram.spectrum$spec[0]
 ```
 
 
@@ -88,11 +85,54 @@ cepstral analysis as follows. The data are in speech.
 ### (a) 
 Calculate and display the log-periodogram of the data. Is the periodogram periodic,as predicted?
 
+
+```{r}
+rm(list = ls())
+data(speech, package="astsa")
+df<-speech
+plot(df, main ="1 second (1000 points) sample of recorded speech for the phrase 'aaa...hhh' ")
+df.spec <- spectrum(df,log="yes")
+```
+The log periodogram is periodic.  We can see this structure in the ACF as well.  
+
+```{r ,results='hide',fig.keep='all'}
+library(astsa)
+invisible(acf2(df))
+```
+
+
 ###(b) 
 Perform a cepstral (spectral) analysis on the detrended logged periodogram, and
 use the results to estimate the delay D. How does your answer compare with the
 analysis of Example 1.27, which was based on the ACF?
 
+
+```{r}
+df.fs <-data.frame(spec=log(df.spec$spec),freq=df.spec$freq)
+
+lm.fit <- lm(spec ~ freq,df.fs)
+summary(lm.fit)
+df.detrended <- df.spec
+
+plot(df.spec$freq,log(df.spec$spec),pch ='*',main="log spectrum with linear trend line")
+abline(lm.fit)
+```
+
+Now we subtract the trend and calculate the spectrum of the detrended log spectrum.
+
+```{r}
+detrended.log.spec <- ts(log(df.spec$spec) - predict(newdata =df.fs,lm.fit))
+plot(detrended.log.spec, main="detrended log spectrum")
+```
+
+```{r}
+spc.detrended.log.spec <- spectrum(detrended.log.spec,log="yes")
+```
+We see the pitch period D located around 0.1, or 10Hz. 
+
+```{r}
+pander(data.frame(omega=spc.detrended.log.spec$freq[53],power=spc.detrended.log.spec$spec[53]),caption="Frequency and Power of Pitch Period D")
+```
 
 ## 4.18 Consider two time series
 $x_t = w_t -w_{t-1}$ , $y_t = \frac{1}{2} (w_t + w_{t-1})$,
@@ -102,7 +142,7 @@ formed from the white noise series $w_t$ with variance $\sigma^2 = 1$.
 Are $x_t$ and $y_t$ jointly stationary? Recall the cross-covariance function must also
 be a function only of the lag $h$ and cannot depend on time.
 
-Each series is stationary and the cross covariance function is a function of the lag only so these time sereis are jointly stationary.  We omit the computations here, but the cross covariance is given by 
+Each series is stationary and the cross covariance function is a function of the lag only so these time series are jointly stationary.  We omit the computations here, but the cross covariance is given by 
 
 $$\gamma_{x\;y}(h) = \,
 \begin{cases}
@@ -117,7 +157,7 @@ $$
 Compute the spectra $f_y(\omega)$ and $f_x(\omega)$, and comment on the difference between
 the two results.
 
-Using our epxression for the spectra of an ARMA process and keeping in mind that $\theta_x(z)=1-z$ and $\theta_y(z)=\frac{1}{2}+ \frac{1}{2}z$we have 
+Using our expression for the spectra of an ARMA process and keeping in mind that $\theta_x(z)=1-z$ and $\theta_y(z)=\frac{1}{2}+ \frac{1}{2}z$we have 
 
 $$f_x(\omega) = \sigma^2 |\theta_x(e^{- 2 \pi i \omega}) |^2 =  \sigma^2 |1- e^{- 2 \pi i \omega} |^2= 2 \sigma^2 (1-cos(2 \pi i \omega))  $$
 
@@ -132,10 +172,28 @@ Find a and b such that
 $$ P \{  a \leq  \bar{f_y}(0.10)  \leq b  \}=0.90 $$  
 This expression gives two points that will contain 90% of the sample spectral values. Put 5% of the area in each tail.
 
-Appendix C.2 is pretty technical. If you know some analyis we can show that 
+Appendix C.2 is pretty technical. If you know some analysis we can show that 
 
 $$ 2 L \bar{f}_y(\omega)  \sim \chi^2_{2 L}$$ 
-This at least makes intuitive sense since we're summing squares of normal random variable to estimate the periodogram.  Now the pivot can be used to form a  1-
+
+This at least makes intuitive sense since we're summing squares of normal random variable to estimate the periodogram.  Now the pivot can be used to form a probability statement for $\bar{f}_y(\omega)$
+
+$$P[ \frac{2 L }{\chi^2_{2 L}(1-\frac{\alpha}{2})} \leq \bar{f}_y(\omega) \leq \frac{2 L }{\chi^2_{2 L}(\frac{\alpha}{2})}  ] = 1-\alpha$$
+We calculate this in the code below 
+
+```{r}
+omega <- 0.1
+L <- 3
+ch.right.tail <- qchisq(1-.05,2 *L)
+ch.left.tail <- qchisq(0.05,2 *L)
+
+a <- 2 * L /ch.right.tail
+
+b <- 2 * L / ch.left.tail
+
+pander(data.frame(a=a,b=b), caption = "Probability Mass Limits")
+```
+
 
 
 ## 4.27 Production vs Unemployment Analysis 
@@ -177,7 +235,7 @@ plot(sr, plot.type = "coh", ci.lty = 2)
 abline(h = C)
 ```
 
-The areas of large coherence represent frequency ranges where we may predict one series from another via a linear relationship such as a filter. If one series lags another at a particular frequency the phase of the two components are different. The series with the larger phase can be used to perdict the other.  Keeping mind that we're talking about projecting the series onto the fourier basis function for a perticualr $\omega$ and using that.  
+The areas of large coherence represent frequency ranges where we may predict one series from another via a linear relationship such as a filter. If one series lags another at a particular frequency the phase of the two components are different. The series with the larger phase can be used to predict the other.  Keeping mind that we're talking about projecting the series onto the Fourier basis function for a particular $\omega$ and using that.  
 
 The plot above displays coherence with the line indicating a significance level of $\alpha=0.001$ 
 
@@ -188,7 +246,7 @@ $u_t = x_t - x_{t-1}$ followed by $v_t = u_t - u_{t-12}$
 to the series given above? Plot the predicted frequency responses of the simple
 difference filter and of the seasonal difference of the first difference.
 
-In applying $u_t$ we'd be attenuating the low frequency components in the time series.  Applying $v_t$ would attenuate the components around the sesaonal signal.  If there we're a peak in the spectrum at the $\omega$ corresponding to a period $12$, the filter $v_t$ would supress that.
+In applying $u_t$ we'd be attenuating the low frequency components in the time series.  Applying $v_t$ would attenuate the components around the seasonal signal.  If there we're a peak in the spectrum at the $\omega$ corresponding to a period $12$, the filter $v_t$ would suppress that.
 We can calculate the frequency response of the filter from 
 
 Using the notation from the book, and that $u_t$ has coefficients $a_0=1, \; a_1=-1$ and all other $a_j=0$ in the linear filter, we have
@@ -211,7 +269,7 @@ lines(w,FRdiff12,col=2)
 
 ### (c) 
 Apply the filters successively to one of the two series and plot the output. Examine
-the output after taking a first difference and comment on whether stationarity is a
+the output after taking a first difference and comment on whether stationary is a
 reasonable assumption. Why or why not? Plot after taking the seasonal difference
 of the first difference. What can be noticed about the output that is consistent with
 what you have predicted from the frequency response? Verify by computing the
